@@ -1,0 +1,14 @@
+#
+# aa_monitor
+# 
+
+# Daemon startup options
+#
+# Note: run aa_monitor --help for list
+#       of supported options
+#
+# Type: string
+# Default: "--daemon"
+# OPTS="--daemon"
+
+# EOF

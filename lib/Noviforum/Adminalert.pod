@@ -1,0 +1,76 @@
+=head1 NAME
+
+Flexible service health checking infrastructure
+
+=head1 DEPLOYMENT
+
+=head2 Standalone HTTP server
+
+Start the daemon:
+
+ ./bin/aa_monitor.pl
+
+For implementation details see L<Noviforum::Adminalert::Protocol::HTTP>.
+
+=head2 Standalone HTTPS server
+
+For implementation details see L<Noviforum::Adminalert::Protocol::HTTPS>.
+
+=head2 FastCGI server
+
+=head2 CGI
+
+=head2 Command line
+
+=head2 REST INTERFACE
+
+
+
+=head1 AUTHORS
+
+Brane F. Gracnar
+
+=head1 SEE ALSO
+
+=over 4
+
+=item *
+
+L<Noviforum::Adminalert::CheckHarness> - Basic checking infrastructure
+
+=item *
+
+L<Noviforum::Adminalert::Check> - abstract service checking module 
+
+=item *
+
+L<Noviforum::Adminalert::Daemon> - simple daemon implementation
+
+=item *
+
+L<Noviforum::Adminalert::Config> - configuration interface 
+ 
+
+
+=back
+
+
+=head1 LICENSE
+
+ Copyright (C) 2011  Brane F. Gracnar
+ 
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License
+ as published by the Free Software Foundation; either version 2
+ of the License, or (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+=cut 

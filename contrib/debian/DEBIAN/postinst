@@ -1,0 +1,61 @@
+#!/bin/sh
+
+# $Id: postinst 1670 2010-03-02 11:12:49Z bfg $
+# $Date: 2010-03-02 12:12:49 +0100 (Tue, 02 Mar 2010) $
+# $Author: bfg $
+# $Revision: 1670 $
+# $LastChangedRevision: 1670 $
+# $LastChangedBy: bfg $
+# $LastChangedDate: 2010-03-02 12:12:49 +0100 (Tue, 02 Mar 2010) $
+# $URL: https://svn.interseek.com/repositories/admin/aa_monitor/trunk/contrib/debian/DEBIAN/postinst $
+
+
+# aa_monitor should start at system startup...
+update-rc.d -f aa_monitor defaults >/dev/null 2>&1
+
+case $1 in
+	# Configure this package.  If the package must prompt the user for
+	# information, do it here.
+	configure)
+
+		# Make our version of a program available
+		#: update-alternatives \
+		#:       --install /usr/bin/program program /usr/bin/alternative 50 \
+		#:       --slave /usr/share/man/man1/program.1.gz program.1.gz \
+		#:               /usr/share/man/man1/alternative.1.gz
+
+		ucf /usr/share/aa_monitor/aa_monitoir /etc/default/aa_monitor
+		
+
+		;;
+
+	# Back out of an attempt to upgrade this package FROM THIS VERSION
+	# to version $2.  Undo the effects of "prerm upgrade $2".
+	abort-upgrade)
+		;;
+
+	# Back out of an attempt to remove this package, which was due to
+	# a conflict with package $3 (version $4).  Undo the effects of
+	# "prerm remove in-favour $3 $4".
+	abort-remove)
+		;;
+
+
+	# Back out of an attempt to deconfigure this package, which was
+	# due to package $6 (version $7) which we depend on being removed
+	# to make way for package $3 (version $4).  Undo the effects of
+	# "prerm deconfigure in-favour $3 $4 removing $6 $7".
+	abort-deconfigure)
+		;;
+
+	*)
+		echo "$0: didn't understand being called with \`$1'" 1>&2
+		exit 1;
+		;;
+
+esac
+
+# restart aa_monitor service...
+service aa_monitor restart
+
+# EOF

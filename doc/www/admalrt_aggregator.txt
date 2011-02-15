@@ -1,0 +1,33 @@
+# $Id:admalrt_aggregator.txt 530 2007-11-07 15:53:36Z bfg $
+# $LastChangedRevision:530 $
+# $LastChangedBy:bfg $
+# $LastChangedDate:2007-11-07 16:53:36 +0100 (Wed, 07 Nov 2007) $
+
+1. Kaj je admalrt_aggregator (AAG)?
+
+AAG je preprost CGI skript, ki se poveže na seznam v konfiguracijski datoteki
+podanih http URL naslovov, na katerih naj bi tekli AdminAlert servisi,
+prebere vsebino in iz vsebine izlušči nedelujoče servise.
+
+Končni seznam je tabela URLjev s stanjem servisov.
+
+2. Kako konfiguriram apache strežnik, da bo znal streči AAG?
+
+Zahteve: apache 1.x/2.x.x z omogočenim mod_cgi.
+Predpostavka: paket aa_monitor, katerega del je AAG, je nameščen v imeniku:
+
+/export/software/support/aa_monitor
+
+Konfiguracija:
+
+<Directory "/export/software/support/aa_monitor/www/admalrt_aggregator">
+	Order allow,deny
+	Allow from all
+
+	AddHandler cgi-script .pl
+	Options +ExecCGI
+	
+	DirectoryIndex index.pl
+</Directory>
+
+

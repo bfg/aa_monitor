@@ -1,0 +1,97 @@
+#!/bin/sh
+
+# $Id: aa_monitor 1670 2010-03-02 11:12:49Z bfg $
+# $Date: 2010-03-02 12:12:49 +0100 (Tue, 02 Mar 2010) $
+# $Author: bfg $
+# $Revision: 1670 $
+# $LastChangedRevision: 1670 $
+# $LastChangedBy: bfg $
+# $LastChangedDate: 2010-03-02 12:12:49 +0100 (Tue, 02 Mar 2010) $
+# $URL: https://svn.interseek.com/repositories/admin/aa_monitor/trunk/init.d/aa_monitor $
+
+### BEGIN INIT INFO
+# Provides:          aa_monitor
+# Required-Start:    $syslog
+# Required-Stop:     $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start daemon at boot time
+# Description:       Enable service provided by daemon.
+### END INIT INFO
+
+PATH="${PATH}:/sbin:/usr/sbin:/usr/local/sbin"
+export PATH
+
+PROGNAME=`which aa_monitor.pl 2>/dev/null`
+test -z "${PROGNAME}" && PROGNAME="/export/software/support/aa_monitor/bin/aa_monitor.pl"
+OPTS="--daemon"
+MYNAME="`basename $0`"
+
+get_parent_pid() {
+	pid=`ps -ef | grep aa_monitor.pl | grep -v grep | grep -E '^[a-z0-9\-\.]+[[:space:]]+[0-9]+[[:space:]]+1[[:space:]]+' | awk '{print $2}'`
+	if [ -z "$pid" ]; then
+		return 1
+	else
+		echo "$pid"
+		return 0
+	fi
+}
+
+# check for defaults
+for f in /etc/{sysconfig,default}/aa_monitor; do
+	if [ -f "$f" -a -r "$f" ]; then
+		. "$f" >/dev/null 2>&1
+		break
+	fi
+done
+
+case $1 in
+	start)
+		if [ -x "${PROGNAME}" ]; then
+			echo -n "Starting ${MYNAME}: "
+			if ${PROGNAME} ${OPTS} >/dev/null 2>&1; then
+				echo "ok"
+			else
+				echo "failed"
+				exit 1
+			fi 
+		else
+			echo "${MYNAME}: Could not found ${PROGNAME}"
+			exit 1
+		fi
+		;;
+
+	stop)
+		echo -n "Stopping ${MYNAME}: "
+		killall -9 aa_monitor.pl >/dev/null 2>&1
+		if [ "$?" = "0" ]; then
+			echo "ok"
+		else
+			echo "failed"
+			exit 1
+		fi
+		;;
+	
+	status)
+		pid=`get_parent_pid`
+		if [ -z "$pid" ]; then
+			echo "aa_monitor is stopped."
+			exit 1
+		else
+			echo "aa_monitor is running as pid $pid"
+			exit 0
+		fi
+		;;
+
+	restart)
+		$0 stop
+		$0 start
+		;;
+
+	*)
+		echo "Usage: `basename $0` {start|stop|restart|status}"
+		exit 1
+		;;
+esac
+
+exit 0;

@@ -1,14 +1,5 @@
 #!/bin/sh
 
-# $Id: aa_monitor 1670 2010-03-02 11:12:49Z bfg $
-# $Date: 2010-03-02 12:12:49 +0100 (Tue, 02 Mar 2010) $
-# $Author: bfg $
-# $Revision: 1670 $
-# $LastChangedRevision: 1670 $
-# $LastChangedBy: bfg $
-# $LastChangedDate: 2010-03-02 12:12:49 +0100 (Tue, 02 Mar 2010) $
-# $URL: https://svn.interseek.com/repositories/admin/aa_monitor/trunk/init.d/aa_monitor $
-
 ### BEGIN INIT INFO
 # Provides:          aa_monitor
 # Required-Start:    $syslog

@@ -18,7 +18,7 @@ WRITE END-USER DOCUMENTATION!
 
 =head1 GETTING STARTED
 
-aa_monitor comes with only one command: B<aa_monitor.pl>
+aa_monitor comes with only one command: B<aa_monitor> which handles all usage scenarios.
 
 =head2 STANDALONE HTTP DAEMON
 

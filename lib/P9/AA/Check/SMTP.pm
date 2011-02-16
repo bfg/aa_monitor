@@ -17,10 +17,6 @@ our $VERSION = 0.10;
 
 SMTP server checking module and basic smtp methods.
 
-=head1 REQUIREMENTS
-
-L<Net::SMTP>
-
 =head1 METHODS
 
 This module inherits all methods from L<P9::AA::Check::_Socket>.

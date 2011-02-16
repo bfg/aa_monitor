@@ -64,12 +64,12 @@ sub clearParams {
 	);
 	$self->cfgParamAdd(
 		'imap_tls',
-		0,
+		1,
 		'Try to establish TLS secured session after successful connect to IMAP server?.',
 		$self->validate_bool(),
 	);
 	$self->cfgParamAdd(
-		'imap_folder',
+		'imap_mailbox',
 		'INBOX',
 		'Try to select specified folder after successful connection.',
 		$self->validate_str(1024),
@@ -93,7 +93,8 @@ sub check {
 	$self->bufApp("Successfully established connection with IMAP server.");
 	
 	# select inbox
-	return CHECK_ERR unless ($self->imapSelectMbox($sock, $self->{imap_folder}));
+	return CHECK_ERR unless ($self->imapSelectMbox($sock, $self->{imap_mailbox}));
+	$self->bufApp("Successfully opened mailbox $self->{imap_mailbox}.");
 
 	# disconnect
 	$self->imapDisconnect($sock);
@@ -102,6 +103,15 @@ sub check {
 }
 
 =head2 imapConnect
+
+ my $sock = $self->imapConnect(
+ 	imap_host => 'host.example.org',
+ 	imap_port => 143,
+ 	imap_tls => 1,
+ 	imap_ssl => 0,
+ 	imap_user => 'user',
+ 	imap_pass => 'passwd',
+ );
 
 Connects to IMAP server, establish SSL/TLS, try to login. Returns socket
 on success, otherwise undef.
@@ -122,6 +132,11 @@ sub imapConnect {
 	my $port = delete($o->{imap_port}) || 25;
 	my $ssl = delete($o->{imap_ssl});
 	my $tls = delete($o->{imap_tls});
+
+	unless (defined $user && length $user && defined $pass) {
+		$self->error("No username/password provided.");
+		return undef;
+	}
 
 	# can't use SSL and TLS at the same time.
 	$ssl = 0 if ($ssl && $tls);
@@ -170,6 +185,9 @@ sub imapConnect {
 			return undef;			
 		}
 		$self->bufApp("Successfully authenticated as $user.");
+	} else {
+		$self->error("Connection to IMAP server succeeded, but there were no provided credentials.");
+		return undef;
 	}
 
 	return $sock;
@@ -189,12 +207,8 @@ sub imapCmd {
 		return 0;
 	}
 
-	my $id = refaddr($sock);
-	my $i = $self->{_imap}->{$id};
-	unless (defined $i) {
-		$self->error("Untracked socket.");
-		return 0;
-	} 
+	my $i = $self->imapSockMeta($sock);
+	return 0 unless ($i);
 
 	$i->{imap_idx}++;
 	my $idx = $i->{imap_idx};
@@ -290,18 +304,22 @@ sub imapCmd {
 =cut
 sub imapSelectMbox {
 	my ($self, $sock, $mbox) = @_;
-	return 0 unless ($self->imapCmd("SELECT " . $mbox));
+	unless ($self->imapCmd($sock, "SELECT " . $mbox)) {
+		$self->error("Unable to select folder: " . $self->error());
+		return 0;
+	}
 	
+	my $i = $self->imapSockMeta($sock);
+	return 0 unless ($i);
+
 	my $num = 0;
-	my $id = refadd($sock);
-	my $i = $self->{_imap}->{$id};
 	
 	# ok, check for messages
 	if ($i->{imap_ctrl} =~ m/\s+(\d+)\s+EXISTS/mi) {
 		$i->{imap_nmsgs} = $1;
 	}
 	
-	$self->bufApp("  Mailbox '$mbox' contains " . $i->{imap_nmsgs} . " messages.") if ($self->{debug});
+	$self->bufApp(" Mailbox '$mbox' contains " . $i->{imap_nmsgs} . " messages.") if ($self->{debug});
 
 	return 1;
 }
@@ -315,9 +333,30 @@ Ends IMAP session and closes socket. Always returns 0.
 =cut
 sub imapDisconnect {
 	my ($self, $sock) = @_;
-	$self->imapCommand($sock, "LOGOUT");
+	$self->imapCmd($sock, "LOGOUT");
 	close($sock);
 	return 1;
+}
+
+=sub head2 imapSockMeta
+
+ my $m = $self->imapSockMeta($sock);
+
+Returns socket imap metadata on success, otherwise undef.
+
+=cut
+sub imapSockMeta {
+	my ($self, $sock) = @_;
+	unless (defined $sock && blessed($sock) && $sock->isa('IO::Socket')) {
+		$self->error("Invalid socket.");
+		return undef;
+	}
+	my $id = refaddr($sock);
+	unless (exists $self->{_imap}->{$id}) {
+		$self->error("Untracked socket.");
+		return undef;
+	}
+	return $self->{_imap}->{$id};
 }
 
 sub _getConnectOpt {

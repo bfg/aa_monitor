@@ -10,16 +10,15 @@ use File::Basename;
 
 # determine libdir and put it into @INC
 use lib (
+	'/usr/lib/aa_monitor',
+	'/usr/local/lib/aa_monitor',
 	abs_path($FindBin::RealBin .  "/../" . "lib"),
-	abs_path($FindBin::RealBin .  "/../" . "contrib/third-party"),
-	"/usr/libexec/aa_monitor",
-	'/usr/share/aa_monitor/lib',
-	'/usr/local/share/aa_monitor/lib',
+	abs_path($FindBin::RealBin .  "/../" . "ext"),
 );
 
-use Noviforum::Adminalert::Log;
-use Noviforum::Adminalert::Config;
-use Noviforum::Adminalert::Constants qw(:all);
+use P9::AA::Log;
+use P9::AA::Config;
+use P9::AA::Constants qw(:all);
 
 #############################################################
 #                    Runtime variables                      #
@@ -28,8 +27,8 @@ my $MYNAME= basename($0);
 
 our $VERSION = '1.0.0_2';
 
-my $log = Noviforum::Adminalert::Log->new();
-my $cfg = Noviforum::Adminalert::Config->new();
+my $log = P9::AA::Log->new();
+my $cfg = P9::AA::Config->new();
 
 my $cmd_line = 0;
 my $nagios = 0;

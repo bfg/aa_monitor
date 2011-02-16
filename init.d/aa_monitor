@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# chkconfig stuff
+
+# LSB stuff...
 ### BEGIN INIT INFO
 # Provides:          aa_monitor
 # Required-Start:    $syslog

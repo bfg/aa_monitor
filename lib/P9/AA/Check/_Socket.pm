@@ -300,6 +300,9 @@ sub sslify {
 		$self->error("Socket is not connected.");
 		return undef;
 	}
+	# do we have SSL support?
+	return undef unless ($self->hasSSL());
+	
 
 	# try to establish SSL secured session...
 	$self->bufApp("Trying to establish SSL/TLS secured connection.") if ($self->{debug_socket});
@@ -311,6 +314,7 @@ sub sslify {
 		);
 		return undef;
 	}
+	$self->bufApp("SSL/TLS successfully established: " . $ssl_sock->get_cipher()) if ($self->{debug_socket});
 
 	return $ssl_sock;
 }

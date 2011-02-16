@@ -18,7 +18,7 @@ sub do_pod_link {
 	if ($tagname eq 'L' and $type eq 'pod') {
 		if (defined $to) {
 			$to =~ s/["']//g;
-			if ($to =~ /^Noviforum::/) {
+			if ($to =~ /^P9::/) {
 				$to =~ s{::}{/}g;
 				my $r = "/doc/$to";
 				$r .= "#" . $section if (defined $section && length($section));

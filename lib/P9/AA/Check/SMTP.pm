@@ -36,7 +36,7 @@ sub clearParams {
 	# define additional configuration variables...
 	$self->cfgParamAdd(
 		'smtp_host',
-		'smtp.example.org',
+		'localhost',
 		'SMTP server hostname or ip-address.',
 		$self->validate_str(1024),
 	);
@@ -210,6 +210,7 @@ sub smtpConnect {
 			$self->error($err);
 			return undef;
 		}
+		$self->bufApp("Successfully authenticated as $user.");
 	}
 
 	return $sock;
@@ -408,7 +409,6 @@ sub _getConnectOpt {
 
 L<P9::AA::Check::_Socket>, 
 L<P9::AA::Check>, 
-L<Net::SMTP>, 
 
 =head1 AUTHOR
 

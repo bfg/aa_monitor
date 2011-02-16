@@ -410,6 +410,7 @@ sub _doLog {
 		'result=' . result2str($result);
 	
 	if ($result != CHECK_OK) {
+		no warnings;
 		if ($result == CHECK_ERR) {
 			$log_str .= ' [' . $data->{data}->{check}->{error_message} . ']';
 		}

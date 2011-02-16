@@ -145,6 +145,7 @@ sub process {
 
 	# set http response code
 	if (defined $module && length($module)) {
+		no warnings;
 		if (! $data->{data}->{check}->{success} && $data->{data}->{check}->{error_message} =~ m/^Unable to load driver module/i) {
 			$resp->code(503);
 		} else {

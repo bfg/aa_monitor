@@ -195,9 +195,9 @@ sub imapConnect {
 
 =head2 imapCmd
 
- my $r = $self->imapCmd($sock, $cmd)
+ my $r = $self->imapCmd($sock, $imap_cmd)
 
-Returns 1 on success, otherwise 0.
+Performs single IMAP command and waits for results. Returns 1 on success, otherwise 0.
 
 =cut
 sub imapCmd {
@@ -283,16 +283,6 @@ sub imapCmd {
 	$i->{imap_ctrl} = $msg_ctrl;
 	$i->{imap_status} = $msg_status;
 	$i->{imap_body} = $msg;
-	
-#	if (! $result && ! length($self->{error})) {
-#		$self->bufApp();
-#		$self->bufApp("# Whole read message:");
-#		$self->bufApp($msg) if (defined $msg);
-#		$self->bufApp();
-#		$self->bufApp("# Last read line:");
-#		$self->bufApp($line) if (defined $line);
-#		$self->{error} = "Undefined error message. This should never happen.";
-#	}
 
 	return $result;
 }
@@ -300,6 +290,8 @@ sub imapCmd {
 =head2 imapSelectMbox
 
  my $r = $self->imapSelectMbox($sock, 'INBOX');
+
+Selects specified mailbox on established socket. Returns 1 on success, otherwise 0.
 
 =cut
 sub imapSelectMbox {
@@ -328,13 +320,22 @@ sub imapSelectMbox {
 
  $self->imapDisconnect($sock);
 
-Ends IMAP session and closes socket. Always returns 0.
+Ends IMAP session and closes socket. Always returns 1.
 
 =cut
 sub imapDisconnect {
 	my ($self, $sock) = @_;
+	# perform logout
 	$self->imapCmd($sock, "LOGOUT");
+
+	# remove socket catalog...
+	my $id = refaddr($sock);
+	delete($self->{_imap}->{$id});
+
+	# close socket
 	close($sock);
+	undef $sock;
+
 	return 1;
 }
 

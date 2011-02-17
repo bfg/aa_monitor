@@ -156,7 +156,7 @@ sub getCheckParams {
 sub getReqMethod {
 	my ($self, $req) = @_;
 
-	unless (defined $req && blessed($req) && $req->isa('HTTP::Request')) {
+	unless (defined $req && blessed($req) && $req->can('method')) {
 		$self->error("Invalid request object.");
 		return undef;
 	}
@@ -209,8 +209,8 @@ sub getCheckOutputType {
 	if ($req->can('uri')) {
 		my $path = $req->uri()->path();
 		my @px = split(/\s*\/+\s*/, $path);
-		shift(@px);
-		$path = shift(@px);
+		#shift(@px);
+		$path = pop(@px);
 		$ot = $req->uri()->query_param('output_type');
 		if (! (defined $ot && length($ot)) && defined $path && $path =~ m/\.(\w{3,})$/) {
 			$ot = $1;
@@ -244,7 +244,12 @@ sub getCheckOutputType {
 	# nothing appropriate was detected...
 	unless (defined $type) {
 		my $ua = undef;
-		eval { $ua = $req->user_agent() };
+		if ($req->can('user_agent')) {
+			$ua = $req->user_agent();
+		}
+		elsif ($req->can('header')) {
+			$ua = $req->header('User-Agent');
+		}
 		$type = "HTML" if ($self->isBrowser($ua));	
 		$type = 'PLAIN' unless (defined $type);
 	}
@@ -293,6 +298,11 @@ sub _getCheckParamsGet {
 	# urldecode URI
 	$uri = urldecode($uri);
 	
+	# TODO: this should be implemented
+	# in a better and CONFIGURABLE WAY!
+	$uri =~ s/^.+check\/+//g;
+	$uri = '/' . $uri;
+
 	# split URI by slashes
 	my @uri = split(/\//, $uri);
 	

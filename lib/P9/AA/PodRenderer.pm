@@ -41,6 +41,8 @@ use warnings;
 
 use IO::File;
 
+my $_js = undef;
+
 sub new {
 	my $proto = shift;
 	my $class = ref($proto) || $proto;
@@ -69,15 +71,18 @@ sub render {
 	eval { $parser->parse_string_document($pod) };
 
 	$output =~ s/<pre>/<pre class="prettyprint">/gm;
-
-	my $script = $self->_getScript();
+	
+	# load JS
+	unless (defined $_js) {
+		$_js = $self->_getScript();
+	}
 
 	my $buf = <<EOF
 <!doctype html>
 <html>
   <head>
     <title>$pkg</title>
-	<script language="javascript">$script</script>
+	<script language="javascript">$_js</script>
 	<style type="text/css">
 /*<![CDATA[*/
 

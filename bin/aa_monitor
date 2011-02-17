@@ -145,6 +145,7 @@ sub process_daemon {
 	$server->conn_class(CLASS_CONNECTION);
 
 	# start the goddamn server
+	print STDERR "Starting $MYNAME daemon.\n";
 	my $r = $server->run($cfg);
 	unless ($r) {
 		$log->error($server->error());

@@ -83,7 +83,7 @@ sub process {
 		# /doc => documentation?
 		if ($path =~ m/^\/+doc\/?(.*)/) {
 			my $what = $1;
-			$what = 'Noviforum/Adminalert' unless (defined $what && length($what));
+			$what = 'P9/README_AA' unless (defined $what && length($what));
 			$what =~ s/\/+/::/g;
 			$log->debug("Will render documentation: $what");
 			$self->_renderDoc($what, $resp);

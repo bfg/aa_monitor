@@ -84,6 +84,6 @@ Invoke fsusage check:
 
 =head1 CREDITS
 
-See CREDITS file.
+See L<P9::AA::CREDITS>.
 
 =cut

@@ -58,7 +58,7 @@ sub process {
 		SSL_cert_file => $cfg->get('ssl_cert_file'),
 		SSL_key_file => $cfg->get('ssl_key_file'),
 		SSL_ca_file => $cfg->get('ssl_ca_file'),
-		SL_ca_path => $cfg->get('ssl_ca_path'),
+		SSL_ca_path => $cfg->get('ssl_ca_path'),
 		SSL_verify_mode => $cfg->get('ssl_verify_mode'),
 		SSL_crl_file => $cfg->get('ssl_crl_file'),
 		SSL_check_crl => (defined($cfg->get('ssl_crl_file')) && length($cfg->get('ssl_crl_file')) > 0) ? 1 : 0,

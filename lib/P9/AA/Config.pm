@@ -212,11 +212,13 @@ group = $self->{_cfg}->{group}
 # Chroot to specified directory
 chroot = $self->{_cfg}->{chroot}
 
-# Run as daemon (boolean)
+# Run in background/daemonize (boolean)
 daemon = $self->{_cfg}->{daemon}
 
 # log level
 log_level = $self->{_cfg}->{log_level}
+
+# DAEMON OPTIONS...
 
 # daemon implementation
 # Possible values: basic, anyevent
@@ -321,10 +323,10 @@ sub loadConfigFile {
 		next unless (length($value) > 0);
 		
 		# boolean stuff?
-		if ($value =~ m/t(?:rue)?$/i || $value =~ m/y(?:es)?$/) {
+		if ($value =~ m/^t(?:rue)?$/i || $value =~ m/^y(?:es)?$/) {
 			$value = 1;
 		}
-		elsif ($value =~ m/f(?:alse)?$/i || $value =~ m/n(?:o)?$/i) {
+		elsif ($value =~ m/^f(?:alse)?$/i || $value =~ m/^n(?:o)?$/i) {
 			$value = 0;
 		}
 		elsif ($value =~ m/^(?:undef|null|nil)$/) {

@@ -61,7 +61,7 @@ sub _construct {
 	my $class = ref($proto) || $proto;
 	my $self = {};
 	$self->{ident} = '';
-	$self->{level} = DEBUG;
+	$self->{level} = INFO;
 	bless($self, $class);
 	return $self;
 }

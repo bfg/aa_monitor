@@ -3,7 +3,6 @@ package P9::AA::Check::IMAP;
 use strict;
 use warnings;
 
-use POSIX qw(strftime);
 use Scalar::Util qw(refaddr blessed);
 
 use P9::AA::Constants;
@@ -101,6 +100,22 @@ sub check {
 
 	return $self->success();
 }
+
+sub toString {
+	my ($self) = @_;
+	no warnings;
+	my $str = '';
+	$str .= $self->{imap_user} . '@' if (defined $self->{imap_user});
+	$str .= $self->{imap_host} . '/' . $self->{imap_port};
+	if ($self->{imap_tls}) {
+		$str .= '/TLS'
+	}
+	elsif ($self->{imap_ssl}) {
+		$str .= '/SSL'		
+	}
+	return $str
+}
+
 
 =head2 imapConnect
 

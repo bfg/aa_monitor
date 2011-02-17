@@ -127,6 +127,13 @@ sub toString {
 	my $str = '';
 	$str .= $self->{smtp_user} . '@' if (defined $self->{smtp_user});
 	$str .= $self->{smtp_host} . '/' . $self->{smtp_port};	
+	if ($self->{smtp_tls}) {
+		$str .= '/TLS'
+	}
+	elsif ($self->{smtp_ssl}) {
+		$str .= '/SSL'		
+	}
+
 	return $str
 }
 
@@ -279,7 +286,7 @@ Sends SMTP command. Returns 1 on success, otherwise 0.
 sub smtpCmd {
 	my $self = shift;
 	my $sock = shift;
-	unless ($sock->connected()) {
+	unless (blessed($sock) && $sock->isa('IO::Socket') && $sock->connected()) {
 		$self->error("Socket is not connected.");
 		return 0;
 	}

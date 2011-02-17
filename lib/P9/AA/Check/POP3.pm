@@ -3,8 +3,7 @@ package P9::AA::Check::POP3;
 use strict;
 use warnings;
 
-use POSIX qw(strftime);
-use Scalar::Util qw(refaddr blessed);
+use Scalar::Util qw(blessed);
 
 use P9::AA::Constants;
 use base 'P9::AA::Check::_Socket';
@@ -101,8 +100,12 @@ sub toString {
 	my $str = '';
 	$str .= $self->{pop3_user} . '@' if (defined $self->{pop3_user});
 	$str .= $self->{pop3_host} . '/' . $self->{pop3_port};
-	$str .= '/SSL' if ($self->{pop3_ssl});
-	$str .= '/TLS' if ($self->{pop3_tls});
+	if ($self->{pop3_tls}) {
+		$str .= '/TLS'
+	}
+	elsif ($self->{pop3_ssl}) {
+		$str .= '/SSL'		
+	}
 	return $str
 }
 
@@ -205,7 +208,7 @@ Returns 1 on success, otherwise 0.
 sub pop3Cmd {
 	my $self = shift;
 	my $sock = shift;
-	unless (blessed($sock) && $sock->isa('IO::Socket')) {
+	unless (blessed($sock) && $sock->isa('IO::Socket') && $sock->connected()) {
 		$self->error("Unable to run command @_: Invalid provided socket.");
 		return wantarray ? (0, undef) : undef;
 	}

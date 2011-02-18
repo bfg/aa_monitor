@@ -65,7 +65,7 @@ sub clearParams {
 		$self->validate_str(100),
 	);
 	$self->cfgParamAdd(
-		'REAL_SSL',
+		'USE_SSL',
 		1,
 		'Use SSL for connection to real agent.',
 		$self->validate_bool(),
@@ -102,7 +102,7 @@ sub check {
 sub toString {
 	my ($self) = @_;
 	no warnings;
-	return $self->{real_module} . '@' . $self->{real_hostport};	
+	return $self->{REAL_MODULE} . '@' . $self->{REAL_HOSTPORT};	
 }
 
 sub getRemoteCheckData {

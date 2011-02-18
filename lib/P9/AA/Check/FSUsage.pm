@@ -8,7 +8,7 @@ use base 'P9::AA::Check';
 
 use constant MB => 1024 * 1024;
 
-our $VERSION = 0.20;
+our $VERSION = 0.21;
 
 =head1 NAME
 
@@ -42,11 +42,24 @@ sub clearParams {
 		'Filesystem usage threshold in %',
 		$self->validate_int(1, 99),
 	);
+	$self->cfgParamAdd(
+		'usage_threshold_warn',
+		80,
+		'Filesystem usage warning threshold in %',
+		$self->validate_int(1, 99),
+	);
 	# add configuration parameters...
 	$self->cfgParamAdd(
 		'inode_threshold',
 		90,
 		'Filesystem inode usage threshold in %',
+		$self->validate_int(1, 99),
+	);
+	# add configuration parameters...
+	$self->cfgParamAdd(
+		'inode_threshold_warn',
+		75,
+		'Filesystem inode usage warning threshold in %',
 		$self->validate_int(1, 99),
 	);
 	$self->cfgParamAdd(
@@ -64,13 +77,25 @@ sub clearParams {
 	$self->cfgParamAdd(
 		'thresholds',
 		'',
-		'Per mountpoint threshold settings. Syntax: <mountpoint>=<threshold>[,...] Example: /mnt=88,/var=90',
+		'Per mountpoint usage threshold settings. Syntax: <mountpoint>=<threshold>[,...] Example: /mnt=88,/var=90',
+		$self->validate_str(1024),
+	);
+	$self->cfgParamAdd(
+		'thresholds_warn',
+		'',
+		'Per mountpoint usage threshold warning settings. Syntax: <mountpoint>=<threshold>[,...] Example: /mnt=88,/var=90',
 		$self->validate_str(1024),
 	);
 	$self->cfgParamAdd(
 		'ithresholds',
 		'',
 		'Per mountpoint inode threshold settings. Syntax: <mountpoint>=<threshold>[,...] Example: /mnt=75,/var=67',
+		$self->validate_str(1024),
+	);
+	$self->cfgParamAdd(
+		'ithresholds_warn',
+		'',
+		'Per mountpoint inode warning threshold settings. Syntax: <mountpoint>=<threshold>[,...] Example: /mnt=75,/var=67',
 		$self->validate_str(1024),
 	);
 	$self->cfgParamAdd(
@@ -92,6 +117,7 @@ sub check {
 	
 	my $res = CHECK_OK;
 	my $err = '';
+	my $warn = '';
 	
 	# write nice summary of data to buf.
 	$self->bufApp($self->usageDataAsStr($data));
@@ -104,11 +130,19 @@ sub check {
 		
 		# get usage threshold for this mountpoint
 		my $t_usage = $self->getThreshold($mntpoint);
+		my $t_usage_warn = $self->getThresholdWarn($mntpoint);
 		my $t_inode = $self->getThresholdInode($mntpoint);
+		my $t_inode_warn = $self->getThresholdInodeWarn($mntpoint);
 		
 		my $err_prefix = "Device $dev, directory $mntpoint: ";
 		
 		# check usage (bytes) threshold
+		if ($t_usage_warn > 0 && exists($d->{kb_used_percent}) && $d->{kb_used_percent} > $t_usage_warn) {
+			$warn .= $err_prefix .
+					"Disk space usage of " .
+					"$d->{kb_used_percent}% exceeds warning threshold of $t_usage_warn%.\n";
+			$res = CHECK_WARN unless ($res == CHECK_ERR);
+		}
 		if ($t_usage > 0 && exists($d->{kb_used_percent}) && $d->{kb_used_percent} > $t_usage) {
 			$err .= $err_prefix .
 					"Disk space usage of " .
@@ -117,6 +151,12 @@ sub check {
 		}
 		
 		# check inode usage threshold
+		if ($t_inode_warn > 0 && exists($d->{inode_used_percent}) && $d->{inode_used_percent} > $t_inode_warn) {
+			$warn .= $err_prefix .
+					"Inode usage of " .
+					"$d->{inode_used_percent}% exceeds warning threshold of $t_inode_warn%.\n";
+			$res = CHECK_WARN unless ($res == CHECK_ERR);
+		}
 		if ($t_inode > 0 && exists($d->{inode_used_percent}) && $d->{inode_used_percent} > $t_inode) {
 			$err .= $err_prefix .
 					"Inode usage of " .
@@ -124,8 +164,12 @@ sub check {
 			$res = CHECK_ERR;
 		}
 	}
-	
-	unless ($res) {
+
+	if (length $warn) {
+		$warn =~ s/\s+$//gm;
+		$self->warning($warn);
+	}	
+	if (length $err) {
 		$err =~ s/\s+$//gm;
 		$self->error($err);
 	}
@@ -156,6 +200,24 @@ sub getThreshold {
 	return $self->{usage_threshold};
 }
 
+sub getThresholdWarn {
+	my ($self, $mnt) = @_;
+	return 0 unless (defined $mnt && length($mnt));
+	
+	# check per-mountpoint usage thresholds
+	foreach my $e (split(/\s*[,;]+\s*/, $self->{thresholds_warn})) {
+		my ($dir, $t) = split(/\s*=+\s*/, $e, 2);
+		$dir =~ s/^\s+//g;
+		$dir =~ s/\s+$//g;
+		# convert threshold to integer
+		{ no warnings; $t = abs(int($t)); $t = 99 if ($t > 99) }
+		return $t if ($dir eq $mnt);
+	}
+	
+	# return default threshold
+	return $self->{usage_threshold_warn};
+}
+
 =head2 getThresholdInode ($mountpoint)
 
 Returns inode usage threshold in % for specified mounpoint.
@@ -178,6 +240,25 @@ sub getThresholdInode {
 
 	# return default threshold
 	return $self->{inode_threshold};
+}
+
+sub getThresholdInodeWarn {
+	my ($self, $mnt) = @_;
+	return 0 unless (defined $mnt && length($mnt));
+
+	# check per-mountpoint usage thresholds
+	foreach my $e (split(/\s*[,;]+\s*/, $self->{ithresholds_warn})) {
+		my ($dir, $t) = split(/\s*=+\s*/, $e, 2);
+		$dir =~ s/^\s+//g;
+		$dir =~ s/\s+$//g;
+		# convert threshold to integer
+		{ no warnings; $t = abs(int($t)); $t = 99 if ($t > 99) }
+		
+		return $t if ($dir eq $mnt);
+	}
+
+	# return default threshold
+	return $self->{inode_threshold_warn};
 }
 
 =head2 usageDataAsStr ($data)

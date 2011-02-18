@@ -61,15 +61,9 @@ sub validator_bool {
 	return sub {
 		my ($val, $def) = @_;
 		$def = $default unless (defined $def);
-		$def = ($def) ? 1 : 0;
+		$def = _as_bool($def);
 		return $def unless (defined $val && length($val));
-		$val =~ s/^\s+//g;
-		$val =~ s/\s+$//g;
-		$val = lc($val);
-		if ($val eq '1' || $val =~ m/^y(es)?$/ || $val =~ m/^t(rue)?$/) {
-			return 1;
-		}
-		return 0;
+		return _as_bool($val);
 	};
 }
 
@@ -354,6 +348,15 @@ sub _as_str {
 	}
 
 	return $res;
+}
+
+sub _as_bool {
+	my ($val) = @_;
+	return 0 unless (defined $val && length $val);
+	$val =~ s/^\s+//g;
+	$val =~ s/\s+$//g;
+	$val = lc($val);
+	return ($val eq '1' || $val =~ m/^y(es)?$/ || $val =~ m/^t(rue)?$/) ? 1 : 0;
 }
 
 sub _compile_regex {

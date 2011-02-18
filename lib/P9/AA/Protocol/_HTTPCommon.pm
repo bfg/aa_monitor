@@ -301,7 +301,7 @@ sub _getCheckParamsGet {
 	# TODO: this should be implemented
 	# in a better and CONFIGURABLE WAY!
 	$uri =~ s/^.+check\/+//g;
-	$uri = '/' . $uri;
+	$uri = '/' . $uri unless ($uri =~ m/^\//);
 
 	# split URI by slashes
 	my @uri = split(/\//, $uri);

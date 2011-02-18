@@ -281,27 +281,14 @@ B<NOTE:> Configuration parameter $name must be defined using L<cfgParamAdd()> me
 sub set {
 	my ($self, $name, $val) = @_;
 	return 0 unless (defined $name && length($name) > 0 && $name !~ m/^_/);
-	return 0 if ($name eq 'error');
 
-	my $key = undef;
-
-	# maybe $name matches any regex parameter?
-	my $re = $self->cfgParamIsRegex($name);
-
-	# { no warnings; print "RE: -->$re<-- '$val'\n" };
-	if (defined $re && $name =~ $re) {
-
-		# extract name...
-		# my $t = $1;
-		# anything useable in $t?
-		#if (defined $t && length($t) > 0 && $t !~ m/^_/) {
-		#	$name = $t;
-		#}
+	my $re = undef;
+	# do we have this parameter defined?
+	unless (exists($self->{_cfg}->{$name})) {
+		# do we have regex parameter?
+		$re = $self->cfgParamIsRegex($name);
+		return 0 unless (defined $re && $name =~ $re);
 	}
-
-	# don't set parameter if it's name is not defined
-	# doesn't match any regex parameter.
-	return 0 unless (defined $re || exists($self->{_cfg}->{$name}));
 
 	# get value validator...
 	my $validator =

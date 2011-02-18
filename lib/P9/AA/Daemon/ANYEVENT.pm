@@ -213,27 +213,6 @@ sub _process_check {
 	
 	# send output
 	$req->sendResponse(200, $body, $h);
-
-	return 1;
-
-	print "output: $output_type, renderer: $renderer\n";
-
-	print "We have: ", Dumper($ci), "\n";
-
-	
-	#print "URI: ", refaddr($uri), "\n";
-	#print "URI: $uri, ", Dumper($uri), "\n";
-	{
-		no warnings;
-	#$log->debug("PATH: '$path'; qs: $qs");
-	#$log->debug("Params: ", $req->params());
-	#print "$uri\n";
-	#print "BODY: ", $req->req_content(), "\n";
-	#print "HEADERS: ", Dumper($req->headers()), "\n";
-	#print "REQ: ", Dumper($req), "\n";
-	};
-
-	$req->sendResponse(402, "hahahahahaha");
 }
 
 sub _checkSSL {

@@ -118,23 +118,4 @@ sub createTLSctx {
 	return $ctx
 }
 
-=pod
-sub handle_request {
-   my ($self, $method, $uri, $hdr, $cont) = @_;
-
-   $self->{keep_alive} = ($hdr->{connection} =~ /keep-alive/io);
-
-   my ($ctype, $bound) = _content_type_boundary ($hdr->{'content-type'});
-
-   if ($ctype eq 'multipart/form-data') {
-      $cont = $self->decode_multipart ($cont, $bound);
-
-   } elsif ($ctype =~ /x-www-form-urlencoded/o) {
-      $cont = parse_urlencoded ($cont);
-   }
-   
-
-   $self->event (request => $method, $uri, $hdr, $cont);
-}
-=cut
 1;

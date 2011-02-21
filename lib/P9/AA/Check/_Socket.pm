@@ -129,25 +129,40 @@ Returns socket on success, otherwise undef.
 
 =cut
 sub sockConnect {
-	my ($self, $host, %opt) = @_;
-	unless (defined $host && length($host)) {
-		#$self->error("No host/address or unix socket path was specified.");
-		$self->log_debug("No host/address or unix socket path was specified.");
-		#return undef;
+	my $self = shift;
+	
+	my $host = undef;
+	my %opt = ();
+	
+	my $no_args = $#_ + 1;
+	if ($no_args % 2 == 0) {
+		%opt = @_;
+	} else {
+		($host, %opt) = @_;
 	}
-		
+
+	unless (defined $host && length($host)) {
+		if (exists($opt{PeerAddr})) {
+			$host = delete($opt{PeerAddr});
+		} else {
+			$self->log_debug("No host/address or unix socket path was specified.");
+			#return undef;
+		}
+	}
+	
 	# ipv6 connection method
 	my $v6 = delete($opt{ipv6});
 	$v6 = $self->{ipv6} unless (defined $v6);
 	$v6 = 'prefer' unless (defined $v6);
 	$v6 = lc($v6);
+	return undef unless ($self->v6Sock($v6));
 	
 	# fix %opt
 	unless (exists($opt{Timeout})) {
 		my $to = $self->{timeout_connect};
 		$to = (defined $to) ? $to : $self->{timeout};
 		{ no warnings; $to += 0 };
-		$to = 5 unless (defined $to);
+		$to = 5 unless ($to > 0);
 		$opt{Timeout} = $to;
 	}
 	
@@ -173,14 +188,17 @@ sub sockConnect {
 	# no proto?
 	my $proto = $opt{Proto};
 	$proto = 'tcp' unless (defined $proto && length($proto));
-	$opt{Proto} = $proto;
-	
+	$opt{Proto} = lc($proto);
+
 	# no port?
 	my $port = $opt{PeerPort};
 	unless (defined $port) {
-		$self->error("No connection port was set.");
-		return undef;
+		if ($proto ne 'udp') {
+			$self->error("No connection port was set.");
+			return undef;
+		}
 	}
+	$port = (defined $port) ? $port : '<undefined>';
 	$pfx = "CONNECT [$host]:$port [$opt{Proto}]: ";
 	
 	# apply remote address
@@ -188,6 +206,7 @@ sub sockConnect {
 
 	# do we prefer ipv6 connectivity?
 	if ($v6 eq 'prefer') {
+		print "CLASS: $class\n";
 		# we need two options...
 		# one for ipv6:
 		my %opt_v6 = %opt;
@@ -230,11 +249,13 @@ sub sockConnect {
 
 	# try to connect
 	$self->bufApp($pfx, "Connecting with IPv6 mode '$v6'.") if ($self->{debug_socket});
+	# print "Creating SOCKET: class: $class, options: ", $self->dumpVar(\ %opt);
 	my $conn = $class->new(%opt);
 	unless ($conn) {
 		$self->error("Error connecting to [$host]: $!");
+		return undef;
 	}
-	
+	$self->bufApp($pfx, "Successfully created socket: $conn.") if ($self->{debug_socket});
 	return $conn;
 }
 

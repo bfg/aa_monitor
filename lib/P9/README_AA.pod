@@ -41,7 +41,7 @@ Invoke fsusage check:
  ./bin/aa_monitor -N module=FSUsage usage_threshold=50
 
 =head1 LIST OF CURRENTLY IMPLEMENTED MODULES:
- 
+
  * AsProxy
  * CertificateDB
  * DBI
@@ -56,6 +56,7 @@ Invoke fsusage check:
  * FSUsage
  * FTP
  * HPRAID
+ * IMAP
  * IntelSensors
  * JSON
  * Jabber
@@ -69,14 +70,18 @@ Invoke fsusage check:
  * MegaSAS
  * Memcached
  * MemcachedRepl
+ * Memory
  * MongoDB
  * MongoDBReplicaSet
  * Mount
  * MySQLNDB
  * MySQLNDBUsage
+ * POP3
  * Process
+ * RTSP
  * Rsync
  * SMART
+ * SMTP
  * TCPSocket
  * Time
  * URL

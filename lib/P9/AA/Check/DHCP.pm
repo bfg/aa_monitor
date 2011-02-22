@@ -228,6 +228,7 @@ sub dhcpPrepareListeningSocket {
 		Broadcast => 1,
 		Timeout => $self->{timeout},
 		Broadcast => 1,
+		ipv6 => 'off',
 	);
 	
 	return $self->sockConnect(undef, %opts);
@@ -266,6 +267,7 @@ sub dhcpSend {
 		Timeout => $self->{timeout},
 		Broadcast => $bc,
 		PeerAddr => $dst,
+		ipv6 => 'off',
 	);
 	my $sock = $self->sockConnect($dst, %opt);
 	unless ($sock) {

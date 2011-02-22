@@ -206,7 +206,6 @@ sub sockConnect {
 
 	# do we prefer ipv6 connectivity?
 	if ($v6 eq 'prefer') {
-		print "CLASS: $class\n";
 		# we need two options...
 		# one for ipv6:
 		my %opt_v6 = %opt;
@@ -495,7 +494,7 @@ sub _cfg {
 	}
 
 	# is this ipv6 socket?
-	if (blessed($sock) && $sock->isa('IO::Socket::INET6')) {
+	if (blessed($sock) && $sock->isa(CLASS_INET6)) {
 		return IO::Socket::INET6::configure_orig($sock, $arg);
 	}
 
@@ -507,10 +506,7 @@ sub _getConnClass {
 	my ($self, $host, $v6) = @_;
 	$v6 = 'prefer' unless (defined $v6);
 	$v6 = lc($v6);
-	
-	unless (defined $host && length($host)) {
-		return ($v6 ne 'off') ? CLASS_INET6 : CLASS_INET;
-	}
+	$host = '' unless (defined $host);
 
 	my @classes = (CLASS_INET);
 
@@ -539,7 +535,11 @@ sub _getConnClass {
 		}
 	}
 
-	unless (defined $class) {
+	if (defined $class) {
+		if ($class eq CLASS_INET && $self->isPatched()) {
+			$class = CLASS_INET4;
+		}
+	} else {
 		$self->error(
 			"No suitable connection classes were loaded to handle connection " . 
 			"to [$host] using IPv6 connection method '$v6'."

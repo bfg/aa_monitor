@@ -18,14 +18,14 @@ sub render {
 	my $buf = '';
 	my $exit_code = 0;
 	
-	if ($data->{data}->{check}->{success}) {
-		$buf = "OK\n";
-	}
-	elsif ($data->{data}->{check}->{warning}) {
+	if ($data->{data}->{check}->{warning}) {
 		my $warn = $data->{data}->{check}->{warning_message};
 		$warn =~ s/[\r\n]+/ /gm;
 		$buf = "WARNING: " . $warn . "\n",
 		$exit_code = 1;
+	}
+	elsif ($data->{data}->{check}->{success}) {
+		$buf = "OK\n";
 	}
 	else {
 		my $err = $data->{data}->{check}->{error_message};

@@ -1,8 +1,15 @@
 #!/bin/sh
 
-# chkconfig stuff
+# chkconfig stuff (Be RedHat/CentOS compatible)
+# chkconfig: 2345 55 25
+# description: aa_monitor service health checking daemon
+#
+# processname: sshd
+# config: /etc/sysconfig/aa_monitor
+# config: /etc/aa_monitor/aa_monitor.conf
+# pidfile: /var/run/aa_monitor.pid
 
-# LSB stuff...
+# LSB stuff
 ### BEGIN INIT INFO
 # Provides:          aa_monitor
 # Required-Start:    $syslog
@@ -13,23 +20,8 @@
 # Description:       Enable service provided by daemon.
 ### END INIT INFO
 
-PATH="${PATH}:/sbin:/usr/sbin:/usr/local/sbin"
+PATH="${PATH}:/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin"
 export PATH
-
-PROGNAME=`which aa_monitor.pl 2>/dev/null`
-test -z "${PROGNAME}" && PROGNAME="/export/software/support/aa_monitor/bin/aa_monitor.pl"
-OPTS="--daemon"
-MYNAME="`basename $0`"
-
-get_parent_pid() {
-	pid=`ps -ef | grep aa_monitor.pl | grep -v grep | grep -E '^[a-z0-9\-\.]+[[:space:]]+[0-9]+[[:space:]]+1[[:space:]]+' | awk '{print $2}'`
-	if [ -z "$pid" ]; then
-		return 1
-	else
-		echo "$pid"
-		return 0
-	fi
-}
 
 # check for defaults
 for f in /etc/{sysconfig,default}/aa_monitor; do
@@ -39,42 +31,143 @@ for f in /etc/{sysconfig,default}/aa_monitor; do
 	fi
 done
 
+PROGNAME=`which aa_monitor 2>/dev/null`
+OPTS="--daemon"
+if [ ! -z "${DAEMON_OPT}" ]; then
+	OPTS="${DAEMON_OPT} --daemon"
+fi
+MYNAME=`basename $0`
+ERR=""
+
+daemon_start() {
+	# daemon should be stopped
+	daemon_status >/dev/null 2>&1 && return 1
+	
+	# check program
+	if [ ! -f "${PROGNAME}" -o ! -x "${PROGNAME}" ]; then
+		ERR="Bad aa_monitor binary: '${PROGNAME}'"
+		return 1
+	fi
+
+	# try to start it
+	${PROGNAME} ${OPTS} >/dev/null 2>&1
+	rv="$?"
+	if [ "$rv" != "0" ]; then
+		ERR="Bad startup, check logs for details."
+		return 1
+	fi
+
+	ERR=""
+	return 0
+}
+
+daemon_stop() {
+	# daemon must be running
+	daemon_status >/dev/null 2>&1 || return 1
+	_pid=`daemon_pid 2>/dev/null`
+	
+	if [ -z "${_pid}" ]; then
+		ERR="No pids discovered."
+		return 1
+	fi
+	
+	# soft kill
+	if ! kill ${_pid} >/dev/null 2>&1; then
+		ERR="Error sending SIGTERM to process."
+		return 1
+	fi
+	
+	# kill succeeded, wait for termination
+	i=0
+	terminated=0
+	while [ "$i" != "10" ]; do
+		i=$(($i + 1))
+		if kill -0 ${_pid} >/dev/null 2>&1; then
+			terminated=1
+			break
+		fi
+		sleep 1
+	done
+	
+	# terminated?
+	if [ "${terminated}" = "1" ]; then
+		ERR=""
+		return 0
+	fi
+	
+	# send sigkill
+	if ! kill -9 "${_pid}" >/dev/null 2>&1; then
+		ERR="Error sending SIGKILL to process."
+		return 1
+	fi
+	
+	# check if motherfucker died...
+	if kill -0 "${_pid}" >/dev/null 2>&1; then
+		ERR="Process didn't stop even after SIGKILL."
+		return 1
+	fi
+	
+	ERR=""
+	return 0
+}
+
+daemon_status() {
+	ERR=""
+	_pid=`daemon_pid 2>/dev/null`
+	if [ -z "${_pid}" ]; then
+		ERR="aa_monitor is stopped."
+		_rv=1
+	else
+		ERR="aa_monitor is running as pid ${_pid}."
+		_rv=0
+	fi
+
+	echo "$ERR"
+	return ${_rv}
+}
+
+daemon_pid() {
+	_pid=""
+	# linux, openbsd, freebsd
+	_pid=`ps xa 2>/dev/null | grep "${PROGNAME}" | grep -v grep | head -n 1 | awk '{print $1}'`
+		
+	# solaris and friends
+	if [ -z "${_pid}" ]; then
+		_pid=`ps -ef 2>/dev/null | grep "${PROGNAME}" | grep -v grep | head -n 1 | awk '{print $2}'`
+	fi
+	
+	echo "${_pid}"
+	if [ -z "${_pid}" ]; then
+		return 1
+	else
+		return 0
+	fi
+}
+
 case $1 in
 	start)
-		if [ -x "${PROGNAME}" ]; then
-			echo -n "Starting ${MYNAME}: "
-			if ${PROGNAME} ${OPTS} >/dev/null 2>&1; then
-				echo "ok"
-			else
-				echo "failed"
-				exit 1
-			fi 
+		echo -n "Starting aa_monitor: "
+		if daemon_start; then
+			echo "ok"
 		else
-			echo "${MYNAME}: Could not found ${PROGNAME}"
+			echo "failed [$ERR]"
 			exit 1
 		fi
 		;;
 
 	stop)
-		echo -n "Stopping ${MYNAME}: "
-		killall -9 aa_monitor.pl >/dev/null 2>&1
-		if [ "$?" = "0" ]; then
+		echo -n "Stopping aa_monitor: "
+		if daemon_stop; then
 			echo "ok"
 		else
-			echo "failed"
+			echo "failed [$ERR]"
 			exit 1
 		fi
 		;;
-	
+
 	status)
-		pid=`get_parent_pid`
-		if [ -z "$pid" ]; then
-			echo "aa_monitor is stopped."
-			exit 1
-		else
-			echo "aa_monitor is running as pid $pid"
-			exit 0
-		fi
+		daemon_status
+		exit $?
 		;;
 
 	restart)
@@ -83,7 +176,7 @@ case $1 in
 		;;
 
 	*)
-		echo "Usage: `basename $0` {start|stop|restart|status}"
+		echo "Usage: $MYNAME {start|stop|restart|status}"
 		exit 1
 		;;
 esac

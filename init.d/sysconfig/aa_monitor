@@ -5,10 +5,11 @@
 # Daemon startup options
 #
 # Note: run aa_monitor --help for list
-#       of supported options
+#       of supported options; option --daemon
+#       is *always* appended!
 #
 # Type: string
-# Default: "--daemon"
-# OPTS="--daemon"
+# Default: ""
+DAEMON_OPT=""
 
 # EOF

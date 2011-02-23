@@ -155,6 +155,53 @@ sub process_daemon {
 	return $r;
 }
 
+sub perldoc {
+	my ($pkg) = @_;
+	my $prefix = 'P9::AA::';
+	my $doc = '';
+	if (! defined $pkg) {
+		$doc = 'P9::README_AA';
+	}
+	elsif ($pkg !~ m/::/) {
+		$doc = 'P9::AA::Check';
+		$doc .= '::' . $pkg if (length($pkg));
+	}
+
+	# set PERL5LIB variable...
+	$ENV{PERL5LIB} = join(':', @INC);
+	exec('perldoc', $doc);
+}
+
+sub module_info {
+	my ($name) = @_;
+	eval "use " . CLASS_CHECK . "; 1";
+	if ($@) {
+		print STDERR "Unable to load check class. This is extremely weird.\n";
+		exit 1;
+	}
+	
+	# create object...
+	my $obj = CLASS_CHECK->factory($name);
+	unless (defined $obj) {
+		print STDERR "Unable to create object $name: " . CLASS_CHECK->error() . "\n";
+		exit 1;
+	}
+	
+	# print some data
+	no warnings;
+	print "$name version " . sprintf("%-2.2f", $obj->VERSION()) . "\n";
+	print "\n\t" . $obj->getDescription() . "\n";
+	print "\n";
+	print "CONFIGURATION OPTIONS:\n";
+	foreach my $p ($obj->cfgParamList()) {
+		my $def = $obj->getParamDefaultVal($p);
+		my $desc = $obj->getParamDescription($p);
+		print "\t$p\n";
+		print "\t\t$desc\n";
+		print "\t\tdefault: ", print_var($def), "\n";
+	}
+}
+
 sub printhelp {
 	print <<EOF
 Usage: $MYNAME [OPTIONS]
@@ -201,6 +248,9 @@ EOF
 	print "\n";
 	print "  -A      --enabled-mods   Comma separated list of allowed ping modules\n";
 	print "  -D      --disabled-mods  Comma separated list of disabled ping modules\n";
+	print "\n";
+	print "DOCUMENTATION:\n";
+	print "  -i      --info=MODULE    Prints out module configuration options\n";
 	print "\n";
 	print "OTHER OPTIONS:\n";
 	print "  -l      --list-modules   Prints out list of available ping modules.\n";
@@ -249,6 +299,10 @@ my $r = GetOptions(
 	'debug!' => sub { $cfg->set('log_level', 'debug') },
 	'A|allowed-mods=s' => sub { $cfg->set('modules_enabled', $_[1]) },
 	'D|disabled-mods=s' => sub { $cfg->set('modules_disabled', $_[1]) },
+	'i|info=s' => sub {
+		module_info($_[1]);
+		exit 0;
+	},
 	'l|list-modules' => sub {
 		eval {
 			my $class = CLASS_CHECK;
@@ -259,10 +313,8 @@ my $r = GetOptions(
 		exit 0;
 	},
 	'doc:s' => sub {
-		my $doc = $_[1];
-		$doc = 'Noviforum::Adminalert' unless (defined $doc && length $doc);
-		$ENV{PERL5LIB} = join(':', @INC);
-		exec('perldoc', $doc);
+		perldoc(undef);
+		exit 0;
 	},
 	'V|version' => sub {
 		printf("%s %s\n", $MYNAME, $VERSION);

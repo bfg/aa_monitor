@@ -41,7 +41,19 @@ Modified version used in L<P9::AA::Protocol::FCGI> for fastcgi protocol parsing.
  * modified version of Plack::Handler::FCGI::PP by Christian Hansen and Tatsuhiko Miyagawa
    https://github.com/miyagawa/Plack/blob/master/lib/Plack/Handler/Net/FastCGI.pm
    License: Perl artistic license
-   
+
+=head2 Pod::Perldoc
+
+ * Pod::Perldoc 3.15 by Adriano Ferreira
+   http://search.cpan.org/~ferreira/Pod-Perldoc-3.15/lib/Pod/Perldoc.pm
+   License: Perl artistic license
+
+=head2 Net::DHCP
+
+ * Net::DHCP by Dean HamsteadDean Hamstead
+   http://search.cpan.org/~djzort/Net-DHCP-0.67/lib/Net/DHCP/Packet.pm
+   License: unknown
+
 =head2 POD Renderer
 
 POD renderer and HTML pod output is based on L<Mojolicious::Plugin::PodRenderer>, which is

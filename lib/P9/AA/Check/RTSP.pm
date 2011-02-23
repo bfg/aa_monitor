@@ -192,6 +192,7 @@ sub getDescribe {
 
 	# try to connect...
 	my $rtsp = $self->rtspConnect($url);
+	return undef unless ($rtsp);
 	
 	# get rtsp info about url...
 	my $describe = $rtsp->describe();

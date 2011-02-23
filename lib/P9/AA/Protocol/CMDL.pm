@@ -1,14 +1,5 @@
 package P9::AA::Protocol::CMDL;
 
-# $Id: CMDL.pm 2344 2011-02-14 16:35:49Z bfg $
-# $Date: 2011-02-14 17:35:49 +0100 (Mon, 14 Feb 2011) $
-# $Author: bfg $
-# $Revision: 2344 $
-# $LastChangedRevision: 2344 $
-# $LastChangedBy: bfg $
-# $LastChangedDate: 2011-02-14 17:35:49 +0100 (Mon, 14 Feb 2011) $
-# $URL: https://svn.interseek.com/repositories/admin/aa_monitor/trunk/lib/Noviforum/Adminalert/Protocol/CMDL.pm $
-
 use strict;
 use warnings;
 
@@ -45,7 +36,7 @@ sub process {
 	my ($self, $argv, undef, $ts) = @_;
 	$ts = time() unless (defined $ts);
 	
-	my $fatal_exit = $self->getFatalExitCode();
+	my $fatal_exit = $self->exitCodeFatal();
 	
 	# "parse" command line
 	my $params = {};
@@ -102,7 +93,15 @@ sub process {
 	# select exit code
 	my $exit_code = $headers->{exit_code};
 	unless (defined $exit_code && $exit_code >= 0) {
-		$exit_code = ! $data->{ping}->{result}->{success};
+		if ($data->{data}->{check}->{warning}) {
+			$exit_code = $self->exitCodeWarn();
+		}
+		elsif ($data->{data}->{check}->{success}) {
+			$exit_code = $self->exitCodeOk();
+		}
+		else {
+			$exit_code = $self->exitCodeErr();
+		}
 	}
 
 	exit $exit_code;
@@ -113,7 +112,10 @@ sub getOutputType {
 	return (defined $name && length($name) > 0) ? $name : 'eval';
 }
 
-sub getFatalExitCode { 1 }
+sub exitCodeFatal { 1 }
+sub exitCodeOk { 0 }
+sub exitCodeWarn { 1 }
+sub exitCodeErr { 2 }
 
 =head1 SEE ALSO
 

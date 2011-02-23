@@ -19,7 +19,7 @@ This class inherits all methods from L<P9::AA::Protocol::CMDL>.
 
 sub getOutputType { 'NAGIOS' }
 
-sub getFatalExitCode { 2 }
+sub exitCodeFatal { 3 }
 
 =head1 SEE ALSO
 

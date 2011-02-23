@@ -44,9 +44,15 @@ execution using L<CORE/exit>.
 sub process {
 	my ($self, $argv, undef, $ts) = @_;
 	$ts = time() unless (defined $ts);
-
+	
+	my $fatal_exit = $self->getFatalExitCode();
+	
 	# "parse" command line
 	my $params = {};
+	# first argument should be module name
+	if (${$argv}[0] !~ m/=/) {
+		$params->{module} = shift(@{$argv});
+	}
 	foreach (@{$argv}) {
 		my ($k, $v) = split(/\s*=\s*/, $_, 2);
 		next unless (defined $k && defined $v);
@@ -67,8 +73,8 @@ sub process {
 	# create output renderer
 	my $renderer = $self->getRenderer($output_type);
 	unless (defined $renderer) {
-		print STDERR $self->error(), "\n";
-		exit 1;
+		print $self->error(), "\n";
+		exit $fatal_exit;
 	}
 	
 	# perform the service check...
@@ -76,8 +82,8 @@ sub process {
 	my $data = eval { $harness->check($module, $params, $ts) };
 	if ($@) {
 		$log->error("Exception: $@");
-		print STDERR "Exception while running check. See logs for details.\n";
-		exit 1;
+		print "Exception while running check. See logs for details.\n";
+		exit $fatal_exit;
 	}
 	
 	# so called "headers"
@@ -86,8 +92,8 @@ sub process {
 	# render the data
 	my $body = $renderer->render($data, $headers);
 	unless (defined $body) {
-		print STDERR $renderer->error();
-		return 0;
+		print $renderer->error();
+		exit $fatal_exit;
 	}
 	
 	# write data to stdout...
@@ -105,8 +111,9 @@ sub process {
 sub getOutputType {
 	my ($self, $name) = @_;
 	return (defined $name && length($name) > 0) ? $name : 'eval';
-	
 }
+
+sub getFatalExitCode { 1 }
 
 =head1 SEE ALSO
 

@@ -10,11 +10,18 @@ our $VERSION = 0.10;
 
 =head1 NAME
 
-Proxy checking module - Perform arbitrary check on another agent.
+Proxy checking module - Performs arbitrary check on another agent.
 
-=head1 METHODS
+=head1 DESCRIPTION
 
-This module inherits all methods from L<P9::AA::Check::JSON>.
+This module executes check on arbitrary host running aa_monitor using JSON/REST
+interface.
+
+=head1 CONFIG PARAMETERS
+
+This module accepts any combination of parameter key => value pairs.
+
+=over
 
 =cut
 sub clearParams {
@@ -45,25 +52,57 @@ sub clearParams {
 	$self->cfgParamRemove('ignore_http_status');
 	$self->cfgParamRemove('timeout');	
 
+=item B<any_param> (string, undef)
+
+This is proxy module, so you're able to specify any parameter
+name with arbitrary value. Parameter validation and filtering is
+done on remote aa_monitor agent.
+=cut
 	$self->cfgParamAdd(
 		qr/.+/,
 		undef,
 		'Arbitrary configuration parameter.',
 		$self->validate_str(16 * 1024),
 	);
+	
+=item B<REAL_HOSTPORT> (string, default: "host.example.org")
 
+Remote aa_monitor agent host and listening port.
+
+=cut
 	$self->cfgParamAdd(
 		'REAL_HOSTPORT',
 		'host.example.com:1552',
 		'Real agent host:port',
 		$self->validate_str(1024),
 	);
+=item B<REAL_MODULE> (string, default: undef)
+
+Service check module.
+
+=cut
 	$self->cfgParamAdd(
 		'REAL_MODULE',
 		undef,
 		'Real agent check module name',
 		$self->validate_str(100),
 	);
+=item B<REAL_URI> (string, default: "/")
+
+Remote aa_monitor URI location.
+
+=cut
+	$self->cfgParamAdd(
+		'REAL_URI',
+		'/',
+		'Remote aa_monitor URI location.',
+		$self->validate_str(200),
+	);
+=item B<USE_SSL> (boolean, default: true)
+
+Perform JSON/REST over SSL/TLS encrypted connection
+
+=cut 
 	$self->cfgParamAdd(
 		'USE_SSL',
 		1,
@@ -71,10 +110,15 @@ sub clearParams {
 		$self->validate_bool(),
 	);
 	
-
 	return 1;
 }
+=back
 
+=head1 METHODS
+
+This module inherits all methods from L<P9::AA::Check::JSON>.
+
+=cut
 sub check {
 	my ($self) = @_;
 	
@@ -106,7 +150,7 @@ sub toString {
 }
 
 sub getRemoteCheckData {
-	my $self = shift;
+	my ($self, %opt) = @_;
 	
 	my $module = $self->{REAL_MODULE};
 	my $host_port = $self->{REAL_HOSTPORT};
@@ -131,7 +175,7 @@ sub getRemoteCheckData {
 	# compute url
 	my $url =
 		(($self->{REAL_SSL}) ? 'https://' : 'http://') .
-		$host_port . '/' .
+		$host_port . $self->{REAL_URI} .
 		$module . '/';
 	
 	# compute options

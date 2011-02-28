@@ -7,14 +7,10 @@ aa_monitor - Flexible service health checking framework
 aa_monitor is framework consisting of:
 
  * core library
- * service checking modules (currently: 40)
+ * service checking modules (currently: 44)
  * standalone http, https, fastcgi daemon
  * command line client
  * nagios plugin
-
-=head1 TODO
-
-WRITE END-USER DOCUMENTATION!
 
 =head1 GETTING STARTED
 
@@ -24,68 +20,402 @@ aa_monitor comes with only one command: B<aa_monitor> which handles all usage sc
 
 Invoke:
 
- ./bin/aa_monitor --daemon
+ aa_monitor --daemon
 
 Open web browser and go to: L<http://localhost:1552>
+
+=head3 STANDALONE HTTP DAEMON BEHIND REVERSE PROXY
+
+You can use aa_monitor behind real HTTP server. Just start aa_monitor in
+standalone HTTP 
+
+=head4 Nginx
+
+=head4 Apache
+
+=head2 STANDALONE FastCGI daemon
+
+Configure aa_monitor to use fastcgi protocol. Usage of L<FastCGI|http://www.fastcgi.com>
+protocol can be configured from configuration file or from command line.
+
+B<Configuration file:>
+
+ # Protocol selection
+ # Possible values: http, https, cgi, fastcgi
+ protocol = fastcgi
+
+B<Command line:>
+
+ aa_monitor --protocol fcgi
+
+Now you need to configure your webserver to use FastCGI server
+
+=head3 Nginx
+
+ location /aa_monitor/ {
+ 	include fastcgi_params;
+ 	fastcgi_split_path_info ^(/aa_monitor)(/.*)$;
+ 	fastcgi_param PATH_INFO $fastcgi_path_info;
+ 	fastcgi_pass "unix:/tmp/aa_monitor.sock";
+ }
+
+=head2 CGI script
+
+aa_monitor can be also used as L<CGI|http://en.wikipedia.org/wiki/Common_Gateway_Interface>
+script. Program automatically recognizes CGI environment and activates CGI mode, you
+only need to configure Your webserver
+
+=head3 Apache CGI configuration
+
+ dsfdsf
 
 =head2 COMMAND LINE CLIENT
 
 Invoke fsusage check:
 
- ./bin/aa_monitor -e module=FSUsage usage_threshold=50
+ aa_monitor -e FSUsage usage_threshold=50
+
+Command line client can present check data in various formats. To select different
+output format provide B<output_type> parameter.
+
+ # simple text output
+ aa_monitor -e FSUsage usage_threshold=50 output_type=txt
+ 
+ # xml output
+ aa_monitor -e FSUsage usage_threshold=50 output_type=xml
+ 
+ # perl-eval compatible output (default)
+ aa_monitor -e FSUsage usage_threshold=50 output_type=eval
+ 
+ # json output
+ aa_monitor -e FSUsage usage_threshold=50 output_type=json
+
+=head3 Exit codes
+
+aa_monitor exits with the following exit codes
+
+ 0     check was successful
+ 1     check was successful, warnings were issued
+ 2     check finished with error 
 
 =head2 NAGIOS PLUGIN
 
-Invoke fsusage check:
+First class L<Nagios|http://www.nagios.org/>/L<Icinga|http://www.icinga.org/> support is
+activated with B<-N> command line parameter.
 
- ./bin/aa_monitor -N module=FSUsage usage_threshold=50
+ aa_monitor -N FSUsage usage_threshold=50
+
+=head1 REST INTERFACE
+
+L<REST|http://en.wikipedia.org/wiki/Representational_State_Transfer> interface is implemented by
+B<HTTP, HTTPS, FCGI and CGI> protocols.
+
+Performing checks using REST interface is simple - issue HTTP request and wait for response.
+
+Response can be in various formats:
+
+=over
+
+=item B<JSON> L<JavaScript Object Notation|http://www.json.org/> output.
+
+JSON output structure:
+
+ {
+    "success": false,
+    "error": "Unable to get data: Data retrieval failed: BECOUSE IT FAILED.",
+    "data": {
+        "environment": {
+            "program_version": "1.0.0_2",
+            "hostname": "k2",
+            "program_name": "aa_monitor"
+        },
+        "history": {
+            "changed": true,
+            "changed": false
+            "last_result": "error",
+            "last_buf": "Hello message buffer world from P9::AA::Check::EXAMPLE\nRandom check delay: 0.12131010981649 second(s)\n",
+            "last_time": "1298484073.28082",
+            "last_message": "Exception performing check: HORRIBLE exception accoured while retrieving data.",
+            "last_result_code": 0,
+            "last_id": "d77f771a",
+            "time_diff": 2.37037706375122,
+        },
+        "timings": {
+            "total_duration": 217.330932617188,
+            "check_finish": 1298483996102.72,
+            "check_start": 1298483995961.74,
+            "check_duration": 140.980958938599,
+            "total_start": 1298483995886.56,
+            "total_finish": 1298483996103.9
+        },
+        "check": {
+            "success": false,
+            "as_string": "BLABLA/0/12",
+            "result_code": 0,
+            "messages": "Hello message buffer world from P9::AA::Check::EXAMPLE\nRandom check delay: 0.140786971579304 second(s)\n",
+            "error_message": "Unable to get data: Data retrieval failed: BECOUSE IT FAILED.",
+            "warning": false,
+            "warning_message": "",
+            "id": "284c5e3d"
+        },
+        "module": {
+            "version": "0.01",
+            "name": "EXAMPLE",
+            "class": "P9::AA::Check::EXAMPLE",
+            "configuration": {
+                "param_bool": {
+                    "value": 0,
+                    "default": 0,
+                    "description": "This is boolean configuration parameter \"bool\" with default value of false."
+                },
+                "string_lowercase": {
+                    "value": "blala",
+                    "default": "blala",
+                    "description": "This is string parameter which should always hold lowercased string."
+                },
+                "string_uppercase": {
+                    "value": "BLABLA",
+                    "default": "BLABLA",
+                    "description": "This is string parameter which shoule always hold uppercased string."
+                },
+                "debug": {
+                    "value": 0,
+                    "default": 0,
+                    "description": "Display debugging messages."
+                },
+                "param_int": {
+                    "value": 12,
+                    "default": 12,
+                    "description": "This is integer configuration parameter with min value -1, max value 15 and default of 12."
+                },
+                "string": {
+                    "value": null,
+                    "default": null,
+                    "description": "This is string configuration parameter with default value undef and with maximum string length of 30."
+                },
+                "param_float": {
+                    "value": 3.14,
+                    "default": 3.14,
+                    "description": "This is float configuration parameter with min value 0.1, max value 6.2 and default value of pi. Float precision is set to 2."
+                }
+            }
+        }
+    }
+ }
+
+=item B<XML>
+
+XML output structure:
+
+ <?xml version="1.0" encoding="UTF-8"?>
+ <aa_monitor error="Random generator decided that this check should FAIL with this horrible ERROR message."
+            success="0">
+  <data name="check"
+        as_string="BLABLA/0/12"
+        error_message="Random generator decided that this check should FAIL with this horrible ERROR message."
+        id="3c7fd60a"
+        messages="Hello message buffer world from P9::AA::Check::EXAMPLE
+Random check delay: 0.160654922245534 second(s)
+"
+        result_code="0"
+        success="0"
+        warning="0"
+        warning_message="" />
+  <data name="environment"
+        hostname="k2"
+        program_name="aa_monitor"
+        program_version="1.0.0_2" />
+  <data name="history"
+        changed="1"
+        last_buf="Hello message buffer world from P9::AA::Check::EXAMPLE
+Random check delay: 0.256138873539398 second(s)
+"
+        last_id="5c4986ef"
+        last_message=""
+        last_result="success"
+        last_result_code="1"
+        last_time="1298484075.6512"
+        time_diff="361.462936878204" />
+  <data name="EXAMPLE"
+        class="P9::AA::Check::EXAMPLE"
+        version="0.01">
+    <configuration name="debug"
+                   default="0"
+                   description="Display debugging messages."
+                   value="0" />
+    <configuration name="param_bool"
+                   default="0"
+                   description="This is boolean configuration parameter &quot;bool&quot; with default value of false."
+                   value="0" />
+    <configuration name="param_float"
+                   default="3.14"
+                   description="This is float configuration parameter with min value 0.1, max value 6.2 and default value of pi. Float precision is set to 2."
+                   value="3.14" />
+    <configuration name="param_int"
+                   default="12"
+                   description="This is integer configuration parameter with min value -1, max value 15 and default of 12."
+                   value="12" />
+
+    <configuration name="string"
+                   description="This is string configuration parameter with default value undef and with maximum string length of 30.">
+      <default></default>
+      <value></value>
+    </configuration>
+    <configuration name="string_lowercase"
+                   default="blala"
+                   description="This is string parameter which should always hold lowercased string."
+                   value="blala" />
+    <configuration name="string_uppercase"
+                   default="BLABLA"
+                   description="This is string parameter which shoule always hold uppercased string."
+                   value="BLABLA" />
+  </data>
+  <data name="timings"
+        check_duration="0.160997867584229"
+        check_finish="1298484437.11414"
+        check_start="1298484436.95314"
+        total_duration="0.24028205871582"
+        total_finish="1298484437.11797"
+        total_start="1298484436.87769" />
+ </aa_monitor>
+
+
+=item B<HTML, TXT>
+
+HTML and TXT output formats provide nice output suitable for humans. HTML output is automatically
+selected if client looks like browser and request doesn't contain any requested output
+specification. 
+
+=back
+
+Output format is automatically selected by reading B<Accept:> request header, specifying
+B<output_type> query parameter or by specifying ping module extension.
+
+ # request XML output
+ http://host.example.org/aa_monitor/FUSsage?output_type=xml
+ http://host.example.org/aa_monitor/FUSsage.xml
+
+=head2 REQUEST METHODS
+
+REST inteface support B<GET and POST> request methods. B<POST> request method is
+more flexible, becouse you can send more complex data. POST request method supports
+XML and JSON request body.
+
+B<JSON> request body:
+
+ {
+   "param_name": "param_value",
+   "param_name2": "param_value",
+ }
+
+B<XML> request body:
+
+ <aa_monitor>
+   <param_name>param_value</param_name>
+   <param_name2>param_value</param_name2>
+ </aa_monitor>
+
+B<WARNING:> POST request body is parsed according to B<Content-Type:> request
+header. Currenty only B<(application|text)/(json|xml)> are supported.
+
+=head2 REST CALLS
+
+ # 
+ http://host.example.org/
 
 =head1 LIST OF CURRENTLY IMPLEMENTED MODULES:
 
- * AsProxy
- * CertificateDB
- * DBI
- * DBIReplication
- * DHCP
- * DNS
- * DNSCompare
- * DNSZone
- * DNSZoneConsistency
- * DRBD
- * EDAC
- * FSUsage
- * FTP
- * HPRAID
- * IMAP
- * IntelSensors
- * JSON
- * Jabber
- * KIS
- * Kerberos
- * LDAP
- * LVS
- * MDRAID
- * Mail
- * MegaRAID
- * MegaSAS
- * Memcached
- * MemcachedRepl
- * Memory
- * MongoDB
- * MongoDBReplicaSet
- * Mount
- * MySQLNDB
- * MySQLNDBUsage
- * POP3
- * Process
- * RTSP
- * Rsync
- * SMART
- * SMTP
- * TCPSocket
- * Time
- * URL
- * XML
+=over
+
+=item L<AsProxy|P9::AA::Check::AsProxy>
+
+=item L<CertificateDB|P9::AA::Check::CertificateDB>
+
+=item L<DBI|P9::AA::Check::DBI>
+
+=item L<DBIReplication|P9::AA::Check::DBIReplication>
+
+=item L<DHCP|P9::AA::Check::DHCP>
+
+=item L<DNS|P9::AA::Check::DNS>
+
+=item L<DNSCompare|P9::AA::Check::DNSCompare>
+
+=item L<DNSZone|P9::AA::Check::DNSZone>
+
+=item L<DNSZoneConsistency|P9::AA::Check::DNSZoneConsistency>
+
+=item L<DRBD|P9::AA::Check::DRBD>
+
+=item L<EDAC|P9::AA::Check::EDAC>
+
+=item L<FSUsage|P9::AA::Check::FSUsage>
+
+=item L<FTP|P9::AA::Check::FTP>
+
+=item L<HPRAID|P9::AA::Check::HPRAID>
+
+=item L<IMAP|P9::AA::Check::IMAP>
+
+=item L<IntelSensors|P9::AA::Check::IntelSensors>
+
+=item L<JSON|P9::AA::Check::JSON>
+
+=item L<Jabber|P9::AA::Check::Jabber>
+
+=item L<KIS|P9::AA::Check::KIS>
+
+=item L<Kerberos|P9::AA::Check::Kerberos>
+
+=item L<LDAP|P9::AA::Check::LDAP>
+
+=item L<LVS|P9::AA::Check::LVS>
+
+=item L<MDRAID|P9::AA::Check::MDRAID>
+
+=item L<Mail|P9::AA::Check::Mail>
+
+=item L<MegaRAID|P9::AA::Check::MegaRAID>
+
+=item L<MegaSAS|P9::AA::Check::MegaSAS>
+
+=item L<Memcached|P9::AA::Check::Memcached>
+
+=item L<MemcachedRepl|P9::AA::Check::MemcachedRepl>
+
+=item L<Memory|P9::AA::Check::Memory>
+
+=item L<MongoDB|P9::AA::Check::MongoDB>
+
+=item L<MongoDBReplicaSet|P9::AA::Check::MongoDBReplicaSet>
+
+=item L<Mount|P9::AA::Check::Mount>
+
+=item L<MySQLNDB|P9::AA::Check::MySQLNDB>
+
+=item L<MySQLNDBUsage|P9::AA::Check::MySQLNDBUsage>
+
+=item L<POP3|P9::AA::Check::POP3>
+
+=item L<Process|P9::AA::Check::Process>
+
+=item L<RTSP|P9::AA::Check::RTSP>
+
+=item L<Rsync|P9::AA::Check::Rsync>
+
+=item L<SMART|P9::AA::Check::SMART>
+
+=item L<SMTP|P9::AA::Check::SMTP>
+
+=item L<TCPSocket|P9::AA::Check::TCPSocket>
+
+=item L<Time|P9::AA::Check::Time>
+
+=item L<URL|P9::AA::Check::URL>
+
+=item L<XML|P9::AA::Check::XML>
+
+=back
 
 =head1 CREDITS
 

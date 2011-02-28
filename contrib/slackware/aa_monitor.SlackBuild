@@ -41,25 +41,13 @@ mkdir -p "${DESTDIR}/install"
 
 	mkdir -p usr/sbin
 	mkdir -p usr/bin
-	mkdir -p usr/libexec/aa_monitor
+	mkdir -p usr/lib/aa_monitor
 	
 	# copy stuff
 	cp -ra $BASEDIR/bin/* usr/sbin
 
-	# frontend
-	rm -f usr/sbin/aa_fe.pl
-
-	# www stuff...
-	cp -ra $BASEDIR/www usr/libexec/aa_monitor
-
-	# aa_fe.pl symlink...
-	(
-		cd usr/bin
-		ln -s ../libexec/aa_monitor/www/cgi/aa_monitor.cgi aa_fe.pl
-	)
-	
 	# libz
-	cp -ra $BASEDIR/lib/* usr/libexec/aa_monitor
+	cp -ra $BASEDIR/lib/* usr/lib/aa_monitor
 	
 	###################################################
 	#                     SYSVINIT                    #
@@ -94,7 +82,9 @@ mkdir -p "${DESTDIR}/install"
 
 	# remove svn stuff
 	find . -type d -name '.svn' | xargs rm -rf
-	
+	# remove git shit
+	find . -type d -name .git | xargs rm -rf
+
 	# create slackware package
 	echo "Creating slackware package."
 	chown -R root:root .

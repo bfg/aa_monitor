@@ -10,15 +10,13 @@ Depends: perl,
  libscalar-list-utils-perl,
  libio-socket-ssl-perl,
  libwww-perl,
- libnet-dhcp-perl,
  libnet-dns-perl,
  libnet-jabber-perl,
  libnet-ldap-perl,
- libnet-smtp-ssl-perl,
  libstorable-perl,
  libsys-syslog-perl,
  libxml-simple-perl
-Maintainer: brane.gracnar@planet9.si
+Maintainer: bfg@frost.ath.cx
 Description: aa_monitor - AdminAlert monitor package
  
  This software is modular general purpose health checking system.

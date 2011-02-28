@@ -10,7 +10,7 @@
 
 
 PACKAGE_NAME="aa_monitor"
-PACKAGE_VERSION=`../../bin/aa_monitor.pl -V | awk '{print $2}'`
+PACKAGE_VERSION=`../../bin/aa_monitor -V | awk '{print $2}'`
 BUILD_NO="1"
 
 ##############################################

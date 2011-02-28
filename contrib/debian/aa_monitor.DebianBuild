@@ -43,7 +43,7 @@ echo ""
 	# move destination directory...
 	cd "$DESTDIR"
 	
-	PACKAGE_VERSION=`$BASEDIR/bin/aa_monitor.pl -V | head -n 1 | awk '{print $2}'`
+	PACKAGE_VERSION=`$BASEDIR/bin/aa_monitor -V | head -n 1 | awk '{print $2}'`
 	test -z "$PACKAGE_VERSION" && die "Undefined package version."
 	echo "name: $PACKAGE_NAME, version $PACKAGE_VERSION"
 	export PACKAGE_NAME PACKAGE_VERSION

@@ -1,14 +1,5 @@
 package P9::AA::Protocol::_HTTPCommon;
 
-# $Id: _HTTPCommon.pm 2349 2011-02-14 19:07:45Z bfg $
-# $Date: 2011-02-14 20:07:45 +0100 (Mon, 14 Feb 2011) $
-# $Author: bfg $
-# $Revision: 2349 $
-# $LastChangedRevision: 2349 $
-# $LastChangedBy: bfg $
-# $LastChangedDate: 2011-02-14 20:07:45 +0100 (Mon, 14 Feb 2011) $
-# $URL: https://svn.interseek.com/repositories/admin/aa_monitor/trunk/lib/Noviforum/Adminalert/Protocol/_HTTPCommon.pm $
-
 use strict;
 use warnings;
 
@@ -188,78 +179,49 @@ sub getCheckOutputType {
 	my ($self, $req) = @_;
 	my $type = undef;
 	
-	# Accept request header
-	my $accept = undef;
-	if ($req->can('header')) {
-		$accept = $req->header('Accept');
-		# ignore stupid accept headers...
-		$accept = undef if (defined $accept && $accept eq '*/*');
+	# request method
+	my $method = $self->_getRequestMethod($req);
+	$method = lc($method);
+	unless (defined $method) {
+		$self->error("Undefined request method");
+		return undef;
 	}
 	
-	my $method = undef;
-	if ($req->can('method')) {
-		$method = $req->method();
-	}
-	elsif ($req->can('request_method')) {
-		$method = $req->request_method();
-	}
-	$method = lc ($method) if (defined $method);
-	
-	# output_type query param
-	my $ot = undef;
-	if ($req->can('uri')) {
-		my $path = $req->uri()->path();
-		my @px = split(/\s*\/+\s*/, $path);
-		#shift(@px);
-		$path = pop(@px);
-		$ot = $req->uri()->query_param('output_type');
-		if (! (defined $ot && length($ot)) && defined $path && $path =~ m/\.(\w{3,})$/) {
-			$ot = $1;
-		}
-	}
-	elsif ($req->can('path_info')) {
-		my $path = $req->path_info();
-		my @px = split(/\s*\/+\s*/, $path);
-		$path = pop(@px);
-		$ot = ($req->can('param')) ? $req->param('output_type') : undef;
-		if (! (defined $ot && length($ot)) && defined $path && $path =~ m/\.(\w{3,})$/) {
-			$ot = $1;
-		}		
-	}
-	elsif ($req->can('param')) {
-		$ot = $req->param('output_type');
-	}
+	# Accept: request header
+	my $accept = $self->_getRequestHeader($req, 'Accept');
+	$accept = undef if (defined $accept && $accept =~ m/\*/);
 
-	# query string parameter output_type?
-	if (defined $ot && length($ot) > 0) {
-		$type = $ot;
-	}
-	# Accept: request header?
-	elsif (defined $accept && length($accept)) {
-		if ($accept =~ m/\/([\w\-]+)$/) {
-			$type = $1;
+	# Content-Type: request header
+	my $ct = $self->_getRequestHeader($req, 'Content-Type');
+
+	# output_type URI parameter
+	my $ot = $self->_getQueryParam($req, 'output_type');
+
+	my $ua = $self->_getRequestHeader($req, 'User-Agent');
+	# $log->info("method: '$method', accept: '$accept', ct: '$ct', output_type: '$ot', ua: '$ua'");
+	
+	# query parameter has the highest priority
+	$type = (defined $ot && length $ot) ? $ot : undef;
+	
+	# do we have Accept?
+	unless (defined $type) {
+		if (defined $accept && length $accept) {
+			if ($accept =~ m/\/+(.+)$/i) {
+				$type = $1;
+			}
 		}
 	}
-	# post/put method and Content-Type header?
-	elsif (defined $method && ($method eq 'post' || $method eq 'put')) {
-		my $ct = ($req->can('header')) ? $req->header('Content-Type') : undef;
-		if (defined $ct && length($ct)) {
-			$ct =~ s/\s*;.*$//g;
-			$ct =~ s/^[^\/]+\///g;
-			$type = $ct if (length($ct) > 0);
+	
+	# POST and Content-Type?
+	if (($method eq 'post' || $method eq 'put') && defined $ct) {
+		if ($ct =~ /\/(.+)$/) {
+			$type = $1;
 		}
 	}
 
 	# select default renderer just if
 	# nothing appropriate was detected...
 	unless (defined $type) {
-		my $ua = undef;
-		if ($req->can('user_agent')) {
-			$ua = $req->user_agent();
-		}
-		elsif ($req->can('header')) {
-			$ua = $req->header('User-Agent');
-		}
 		$type = "HTML" if ($self->isBrowser($ua));	
 		$type = 'PLAIN' unless (defined $type);
 	}
@@ -286,9 +248,6 @@ sub checkParamsFromReq {
 	# always check parameters as if request method
 	# would be GET
 	my $data = $self->_getCheckParamsGet($req);
-	use Data::Dumper;
-	$log->info("data: " . Dumper($data));
-	
 	
 	# POST request method is special case
 	if ($method eq 'POST') {
@@ -326,7 +285,6 @@ sub _getCheckParamsGet {
 	# urldecode query string
 	my %qs = ();
 	if (defined $qs && length $qs) {
-		$log->info("Query string: $qs");
 		%qs = ();
 		# urldecode parameters
 		map {
@@ -344,9 +302,7 @@ sub _getCheckParamsGet {
 	
 	# select check module...
 	if (@uri) {
-		$module = pop(@uri);
-		$log->info("Module: $module");
-		
+		$module = pop(@uri);		
 		# /<MODULE>.<output_type> ?
 		if ($module =~ m/^(\w+)\./) {
 			$module = $1
@@ -470,6 +426,48 @@ sub renderDoc {
 
 	# render package documentation
 	return P9::AA::PodRenderer->new()->render($pkg);
+}
+
+sub _getRequestMethod {
+	my ($self, $req) = @_;
+	return undef unless (defined $req && blessed $req);
+	my $m = undef;
+	if ($req->can('method')) {
+		$m = $req->method();
+	}
+	elsif ($req->can('request_method')) {
+		$m = $req->request_method();
+	}
+
+	return $m;
+}
+
+sub _getRequestHeader {
+	my ($self, $req, $name) = @_;
+	return undef unless (defined $req && blessed($req) && defined $name);
+	my $v = undef;
+
+	if ($req->isa('CGI') && $req->can('http')) {
+		$log->info("Getting CGI req header: $name ; ct='$ENV{HTTP_CONTENT_TYPE}'");
+		$v = $req->http($name);
+	}
+	elsif ($req->can('header')) {
+		$v = $req->header($name);
+	}
+	return $v;
+}
+
+sub _getQueryParam {
+	my ($self, $req, $name) = @_;
+	return undef unless (defined $req && blessed($req) && defined $name);
+	my $v = undef;
+	if ($req->can('url_param')) {
+		$v = $req->url_param($name);
+	}
+	elsif ($req->can('uri')) {
+		$v = $req->uri()->query_param($name);
+	}
+	return $v;
 }
 
 1;

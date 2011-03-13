@@ -175,6 +175,22 @@ sub isBrowser {
 	return ($ua =~ m/(?:mozilla|opera|msie|konqueror|epiphany|gecko)/i) ? 1 : 0;
 }
 
+sub getRequestPath {
+	my ($self, $req) = @_;
+	return undef unless (defined $req && blessed($req));
+	
+	my $path = undef;
+	if ($req->can('path_info')) {
+		$path = $req->path_info();
+	}
+	elsif ($req->can('uri')) {
+		$path = $req->uri()->path();
+	}
+	
+	$path = urldecode($path) if (defined $path);
+	return $path;
+}
+
 sub getCheckOutputType {
 	my ($self, $req) = @_;
 	my $type = undef;
@@ -192,7 +208,8 @@ sub getCheckOutputType {
 	$accept = undef if (defined $accept && $accept =~ m/\*/);
 
 	# Content-Type: request header
-	my $ct = $self->_getRequestHeader($req, 'Content-Type');
+	my $ct = ($req->can('content_type')) ? $req->content_type() : undef;
+	$ct = (defined $ct) ? $ct : $self->_getRequestHeader($req, 'Content-Type');
 
 	# output_type URI parameter
 	my $ot = $self->_getQueryParam($req, 'output_type');
@@ -202,7 +219,13 @@ sub getCheckOutputType {
 	
 	# query parameter has the highest priority
 	$type = (defined $ot && length $ot) ? $ot : undef;
-	
+
+	# module suffix...
+	my $path = $self->getRequestPath($req);
+	if ($path =~ m/\.(\w+)$/) {
+		$type = $1;
+	}
+
 	# do we have Accept?
 	unless (defined $type) {
 		if (defined $accept && length $accept) {

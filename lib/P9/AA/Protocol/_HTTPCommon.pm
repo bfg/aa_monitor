@@ -222,7 +222,7 @@ sub getCheckOutputType {
 
 	# module suffix...
 	my $path = $self->getRequestPath($req);
-	if ($path =~ m/\.(\w+)$/) {
+	if (defined $path && $path =~ m/\.(\w+)$/) {
 		$type = $1;
 	}
 
@@ -236,7 +236,7 @@ sub getCheckOutputType {
 	}
 	
 	# POST and Content-Type?
-	if (($method eq 'post' || $method eq 'put') && defined $ct) {
+	if (! defined $type && ($method eq 'post' || $method eq 'put') && defined $ct) {
 		if ($ct =~ /\/(.+)$/) {
 			$type = $1;
 		}

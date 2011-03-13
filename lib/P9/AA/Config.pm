@@ -111,6 +111,9 @@ sub reset {
 	my ($self) = @_;
 
 	$self->{_cfg} = {
+		enable_doc => 1,
+		
+		# daemon options
 		listen_addr => '*',
 		listen_port => 1552,
 		pid_file => '/tmp/aa_monitor.pid',
@@ -190,6 +193,9 @@ sub toString {
 #
 # aa_monitor configuration
 #
+
+# enable documentation rendering?
+enable_doc = $self->{_cfg}->{enable_doc}
 
 # Comma separated list of listening ports or
 # UNIX socket paths

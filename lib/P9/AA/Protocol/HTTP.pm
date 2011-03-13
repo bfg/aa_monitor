@@ -17,6 +17,7 @@ use HTTP::Response;
 use Scalar::Util qw(blessed);
 
 use P9::AA::Log;
+use P9::AA::Config;
 use P9::AA::Constants qw(:all);
 use P9::AA::Protocol::_HTTPCommon;
 
@@ -24,6 +25,7 @@ use base 'P9::AA::Protocol::_HTTPCommon';
 
 our $VERSION = 0.10;
 my $log = P9::AA::Log->new();
+my $cfg = P9::AA::Config->singleton();
 
 =head1 NAME
 
@@ -83,7 +85,7 @@ sub process {
 			return 1;
 		}
 		# /doc => documentation?
-		if ($path =~ m/\/+doc\/?(.*)/) {
+		if ($cfg->get('enable_doc') && $path =~ m/\/+doc\/?(.*)/) {
 			my $what = $1;
 			$what = 'P9/README_AA' unless (defined $what && length($what));
 			$what =~ s/\/+/::/g;

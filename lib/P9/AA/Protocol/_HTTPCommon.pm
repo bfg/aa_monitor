@@ -45,6 +45,7 @@ sub hasXML {
 sub urldecode {
 	shift if ($_[0] eq __PACKAGE__ || (blessed($_[0]) && $_[0]->isa(__PACKAGE__)));
 	my ($str) = @_;
+	return '' unless (defined $str && length $str);
 	$str =~ s/\+/ /g;
 	$str =~ s/%([0-9a-hA-H]{2})/pack('C',hex($1))/ge;
 	return $str;
@@ -216,6 +217,15 @@ sub getCheckOutputType {
 			$ot = $1;
 		}
 	}
+	elsif ($req->can('path_info')) {
+		my $path = $req->path_info();
+		my @px = split(/\s*\/+\s*/, $path);
+		$path = pop(@px);
+		$ot = ($req->can('param')) ? $req->param('output_type') : undef;
+		if (! (defined $ot && length($ot)) && defined $path && $path =~ m/\.(\w{3,})$/) {
+			$ot = $1;
+		}		
+	}
 	elsif ($req->can('param')) {
 		$ot = $req->param('output_type');
 	}
@@ -276,6 +286,9 @@ sub checkParamsFromReq {
 	# always check parameters as if request method
 	# would be GET
 	my $data = $self->_getCheckParamsGet($req);
+	use Data::Dumper;
+	$log->info("data: " . Dumper($data));
+	
 	
 	# POST request method is special case
 	if ($method eq 'POST') {
@@ -294,24 +307,26 @@ sub _getCheckParamsGet {
 		$uri = $req->uri()->path();
 		$qs = $req->uri()->query();
 	}
+	elsif ($req->can('path_info')) {
+		$uri = $req->path_info();
+		if ($req->can('query_string')) {
+			$qs = $req->query_string();
+			$qs =~ s/;/&/g if (defined $qs);
+		}
+	}
 	
 	# urldecode URI
+	$uri = '/' unless (defined $uri && length($uri));
 	$uri = urldecode($uri);
-	
-	# TODO: this should be implemented
-	# in a better and CONFIGURABLE WAY!
-	$uri =~ s/^.+check\/+//g;
 	$uri = '/' . $uri unless ($uri =~ m/^\//);
 
 	# split URI by slashes
-	my @uri = split(/\//, $uri);
-	
-	# first one is always undefined...
-	shift(@uri) if (@uri);
+	my @uri = split(/\/+/, $uri);
 	
 	# urldecode query string
 	my %qs = ();
-	if (defined $qs) {
+	if (defined $qs && length $qs) {
+		$log->info("Query string: $qs");
 		%qs = ();
 		# urldecode parameters
 		map {
@@ -329,7 +344,8 @@ sub _getCheckParamsGet {
 	
 	# select check module...
 	if (@uri) {
-		$module = shift(@uri);
+		$module = pop(@uri);
+		$log->info("Module: $module");
 		
 		# /<MODULE>.<output_type> ?
 		if ($module =~ m/^(\w+)\./) {
@@ -340,14 +356,6 @@ sub _getCheckParamsGet {
 		$module = $qs{module};
 		delete($qs{module});
 	}
-	
-	# try to be restful: get parameters from uri
-	map {
-		my ($k, $v) = split(/\s*=\s*/, $_);
-		if (defined $k && length($k) > 0 && defined $v) {
-			$params->{$k} = $v;
-		}
-	} @uri;
 
 	# replace params from query string
 	map { $params->{$_} = $qs{$_} } keys %qs;
@@ -367,36 +375,34 @@ sub _getCheckParamsPost {
 	$ct = (! defined $ct && $req->can('header')) ? $req->header('Content-Type') : $ct;
 	$ct = '' unless (defined $ct);
 	
-	# get content-length
-	my $cl = ($req->can('content_length')) ? $req->content_length() : undef;
-	$cl = (! defined $cl && $req->can('header')) ? $req->header('Content-Length') : $cl;
-	$cl = 0 unless (defined $cl);
-
 	unless (defined $ct && length($ct) > 0) {
-		$self->error("Missing Content-Type header.");
+		$self->error("Missing Content-Type request header.");
 		return undef;
 	}
-	unless (defined $cl && length($cl) > 0) {
-		$self->error("Missing Content-Length header.");
-		return undef;
+
+	# get request body content
+	my $content = undef;
+	if ($req->can('decoded_content')) {
+		$content = $req->decoded_content();
 	}
-	
-	# don't bother with empty bodies
-	return $data if ($cl < 1);
-	
-	$log->debug("HTTP request content-type: $ct; content-length: $cl");
+	elsif ($req->can('param')) {
+		# remove POSTDATA if req is CGI
+		delete($data->{POSTDATA}) if ($req->isa('CGI'));
+		$content = $req->param('POSTDATA');
+		$content = $self->urldecode($content);
+	}
 	
 	# post data...
 	my $p = undef;
 	
 	# JSON?
 	if ($ct =~ m/^(?:text|application)\/json/i) {
-		$p = $self->parseJSON(\ $req->decoded_content());
+		$p = $self->parseJSON(\ $content);
 		return undef unless (defined $p);
 	}
 	# XML?
 	elsif ($ct =~ m/^(?:text|application)\/xml/i) {
-		$p = $self->parseXML($req->decoded_content());
+		$p = $self->parseXML($content);
 		return undef unless (defined $p);
 	}
 	# other content_type?
@@ -462,10 +468,8 @@ sub renderDoc {
 	eval { require P9::AA::PodRenderer };
 	return undef if ($@);
 
-	# render package
+	# render package documentation
 	return P9::AA::PodRenderer->new()->render($pkg);
-	#my $r = P9::AA::PodRenderer->new();
-	#return $r->render($pkg);
 }
 
 1;

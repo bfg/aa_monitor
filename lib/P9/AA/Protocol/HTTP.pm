@@ -73,6 +73,8 @@ sub process {
 	
 	# EXPERIMENTAL DOCUMENTATION SUPPORT
 	my $path = $req->uri()->path();
+	$path = '/' unless (defined $path && length $path);
+	$path = $self->urldecode($path);
 	if (defined $path && length($path)) {
 		# /favicon.ico?
 		if ($path =~ m/^\/+favicon\.ico/i) {
@@ -81,7 +83,7 @@ sub process {
 			return 1;
 		}
 		# /doc => documentation?
-		if ($path =~ m/^\/+doc\/?(.*)/) {
+		if ($path =~ m/\/+doc\/?(.*)/) {
 			my $what = $1;
 			$what = 'P9/README_AA' unless (defined $what && length($what));
 			$what =~ s/\/+/::/g;

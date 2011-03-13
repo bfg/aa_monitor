@@ -260,7 +260,7 @@ EOF
 	print "\n";
 	print "OTHER OPTIONS:\n";
 	print "  -l      --list-modules   Prints out list of available ping modules.\n";
-	print "          --doc            List documentation.\n";
+	print "          --doc[=MODULE]   Displays documentation.\n";
 	print "  -V      --version        Print script version\n";
 	print "  -h      --help           This help message\n";
 }
@@ -319,7 +319,7 @@ my $r = GetOptions(
 		exit 0;
 	},
 	'doc:s' => sub {
-		perldoc(undef);
+		perldoc($_[1]);
 		exit 0;
 	},
 	'V|version' => sub {

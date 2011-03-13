@@ -118,7 +118,7 @@ sub _checkFile {
 		return 0;
 	}
 	# should be certificate file
-	return 1 unless ($file =~ m/\.crt$/i || $file =~ m/\.pem$/i || $file =~ m/\.der$/i);
+	return 1 unless ($file =~ m/\.(crt|pem|der)$/i);
 
 	# $self->bufApp("CHECK FILE: $file");
 	

@@ -7,7 +7,7 @@ use P9::AA::Constants;
 use base 'P9::AA::Check';
 
 # version MUST be set
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 
 =head1 NAME
 
@@ -119,17 +119,43 @@ sub check {
 
  my $u = $self->getMemoryUsage();
 
-Returns memory usage struct on success, otherwise undef. For structure
-see L</parseMemoryUsage>.
+Returns memory/swap usage struct on success, otherwise undef.
+
+Example output structure:
+
+ {
+  'memory' => {
+    'buffers' => 0,
+    'cached' => 0,
+    'free' => 400,
+    'shared' => 0,
+    'total' => 512,
+    'used' => 102
+  },
+  'swap' => {
+    'free' => 2040,
+    'total' => 2048,
+    'used' => 7
+  }
+ }
 
 =cut
 sub getMemoryUsage {
 	my ($self) = @_;
+	# memory...
 	my ($buf, $s) = $self->qx2($self->getMemoryUsageCmd());
 	return undef unless ($buf);
 
 	# parse it...
-	return $self->parseMemoryUsage($buf);
+	my $memory = $self->parseMemoryUsage($buf);
+	return undef unless (defined $memory);
+
+	($buf, $s) = $self->qx2($self->getSwapUsageCmd());
+	return undef unless ($buf);
+	my $swap = $self->parseSwapUsage($buf);
+	return undef unless (defined $swap);
+	
+	return { memory => $memory, swap => $swap };	
 }
 
 =head2 getMemoryUsageCmd
@@ -144,6 +170,18 @@ sub getMemoryUsageCmd {
 	die "Method getMemoryUsageCmd() is not implemented in " . ref($self);
 }
 
+=head2 getSwapUsageCmd
+
+ my $cmd = $self->getSwapUsageCmd();
+
+Returns command needed to obtain swap usage data on current OS.
+
+=cut
+sub getSwapUsageCmd {
+	my $self = shift;
+	die "Method getMemoryUsageCmd() is not implemented in " . ref($self);	
+}
+
 =head2 parseMemoryUsage
 
  my $data = $self->parseMemoryUsage($raw);
@@ -154,20 +192,13 @@ returns hashref on success, otherwise undef.
 Example result:
 
  {
-  'memory' => {
     'buffers' => '95',
     'cached' => '1338',
     'free' => '221',
     'shared' => '0',
     'total' => '2982',
     'used' => '2760'
-  },
-  'swap' => {
-    'free' => '5037',
-    'total' => '5119',
-    'used' => '82'
-  }
- }
+ };
 
 =cut
 sub parseMemoryUsage {
@@ -175,9 +206,30 @@ sub parseMemoryUsage {
 	die "Method parseMemoryUsage() is not implemented in " . ref($self);
 }
 
+=head2 parseSwapUsage
+
+ my $swap_data = $self->parseSwapUsage($raw);
+
+Parses RAW output (can be scalar or array ref) of free command and
+returns hashref on success, otherwise undef.
+
+Example result:
+
+  {
+    'free' => '5037',
+    'total' => '5119',
+    'used' => '82'
+  }
+
+=cut
+sub parseSwapUsage {
+	my $self = shift;
+	die "Method parseSwapUsage() is not implemented in " . ref($self);	
+}
+
 sub _p {
 	my ($a, $b) = @_;
-	return 0 if ($b == 0);
+	return 0 if (!defined $b || $b == 0);
 	return sprintf(
 		"%-2.2f",
 		abs($a) / abs($b)

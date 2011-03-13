@@ -5,8 +5,31 @@ use warnings;
 
 use base 'P9::AA::Check::Memory';
 
+our $VERSION = 0.14;
+
 sub getMemoryUsageCmd {
 	return 'free -m';
+}
+
+sub getSwapUsageCmd {
+	return shift->getMemoryUsageCmd();
+}
+
+sub getMemoryUsage {
+	my ($self) = @_;
+	# memory...
+	my ($buf, $s) = $self->qx2($self->getMemoryUsageCmd());
+	return undef unless ($buf);
+
+	# parse it...
+	my $memory = $self->parseMemoryUsage($buf);
+	return undef unless (defined $memory);
+
+	# swap
+	my $swap = $self->parseSwapUsage($buf);
+	return undef unless (defined $swap);
+	
+	return { memory => $memory, swap => $swap };	
 }
 
 sub parseMemoryUsage {
@@ -33,19 +56,12 @@ sub parseMemoryUsage {
 #Swap:         5711          0       5711
 
 	my $res = {
-		memory => {
-			total => 0,
-			used => 0,
-			free => 0,
-			shared => 0,
-			buffers => 0,
-			cached => 0,
-		},
-		swap => {
-			total => 0,
-			used => 0,
-			free => 0,
-		}
+		total => 0,
+		used => 0,
+		free => 0,
+		shared => 0,
+		buffers => 0,
+		cached => 0,
 	};
 
 	# parse
@@ -60,23 +76,55 @@ sub parseMemoryUsage {
 		if ($line =~ m/^mem:/i) {
 			my @tmp = split(/\s+/, $line);
 			shift(@tmp);
-			$res->{memory}->{total} = shift(@tmp);
-			$res->{memory}->{used} = shift(@tmp);
-			$res->{memory}->{free} = shift(@tmp);
-			$res->{memory}->{shared} = shift(@tmp);
-			$res->{memory}->{buffers} = shift(@tmp);
-			$res->{memory}->{cached} = shift(@tmp);
-		}
-		# swap?
-		elsif ($line =~ m/^swap:/i) {
-			my @tmp = split(/\s+/, $line);
-			shift(@tmp);
-			$res->{swap}->{total} = shift(@tmp);
-			$res->{swap}->{used} = shift(@tmp);
-			$res->{swap}->{free} = shift(@tmp);			
+			$res->{total} = shift(@tmp);
+			$res->{used} = shift(@tmp);
+			$res->{free} = shift(@tmp);
+			$res->{shared} = shift(@tmp);
+			$res->{buffers} = shift(@tmp);
+			$res->{cached} = shift(@tmp);
+			last;
 		}
 	}
 
+	return $res;
+}
+
+sub parseSwapUsage {
+	my ($self, $in) = @_;
+
+	my $ref = ref($in);
+	unless (defined $in && ($ref eq 'SCALAR' || $ref eq 'ARRAY')) {
+		$self->error("Input data must be defined array or scalar reference.");
+		return undef;
+	}
+	
+	# get_lines sub
+	my $get_lines = ($ref eq 'SCALAR') ?
+		sub { split(/[\r\n]+/, ${$in}) }
+		:
+		sub { @{$in} };
+
+	# result structure...
+	my $res = {
+		total => 0,
+		used => 0,
+		free => 0,
+	};
+
+	# parse
+	my $i = 0;
+	foreach my $line ($get_lines->()) {
+		$i++;
+		if ($line =~ m/^swap:/i) {
+			my @tmp = split(/\s+/, $line);
+			shift(@tmp);
+			$res->{total} = shift(@tmp);
+			$res->{used} = shift(@tmp);
+			$res->{free} = shift(@tmp);
+			last;			
+		}
+	}
+	
 	return $res;
 }
 

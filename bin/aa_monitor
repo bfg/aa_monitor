@@ -166,10 +166,16 @@ sub perldoc {
 		$doc = 'P9::AA::Check';
 		$doc .= '::' . $pkg if (length($pkg));
 	}
-
-	# set PERL5LIB variable...
-	$ENV{PERL5LIB} = join(':', @INC);
-	exec('perldoc', $doc);
+	
+	eval "use Pod::Perldoc; 1";
+	if ($@) {
+		print STDERR "Unable to load perldoc module, sorry.\n";
+		exit 1;
+	}
+	
+	@ARGV = ($doc);
+	Pod::Perldoc->run();
+	exit 0;
 }
 
 sub module_info {

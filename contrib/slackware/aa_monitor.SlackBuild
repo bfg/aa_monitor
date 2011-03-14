@@ -1,14 +1,5 @@
 #!/bin/sh
 
-# $Id: aa_monitor.SlackBuild 2057 2010-11-15 11:12:46Z urosg $
-# $Date: 2010-11-15 12:12:46 +0100 (Mon, 15 Nov 2010) $
-# $Author: urosg $
-# $Revision: 2057 $
-# $LastChangedRevision: 2057 $
-# $LastChangedBy: urosg $
-# $LastChangedDate: 2010-11-15 12:12:46 +0100 (Mon, 15 Nov 2010) $
-
-
 PACKAGE_NAME="aa_monitor"
 PACKAGE_VERSION=`../../bin/aa_monitor -V | awk '{print $2}'`
 BUILD_NO="1"

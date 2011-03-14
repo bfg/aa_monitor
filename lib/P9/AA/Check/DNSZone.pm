@@ -63,6 +63,7 @@ sub check {
 	my $soa = $z->[0];
 	$self->bufApp("Zone $self->{zone} SOA:");
 	$self->bufApp($soa->string());
+	$self->bufApp("Zone contains " . ($#{$z} + 1) . " records.");
 
 	# return success...
 	return CHECK_OK;

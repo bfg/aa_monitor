@@ -76,20 +76,14 @@ sub check {
 	my $res = $self->getResolver();
 	return CHECK_ERR unless (defined $res);
 
-	# send DNS packet to server...
-	local $@;
-	my $packet = eval { $res->send($self->{host}, $self->{type}, $self->{class}) };
-	if ($@) {
-		return $self->error("Exception sending packet: $@");
-	}
-	unless (defined $packet) {
-		return $self->error("Unable to resolve: " . $res->errorstring());
-	}
+	# get data...
+	my $data = $self->resolve($self->{host}, $self->{type}, $self->{class});
+	return CHECK_ERR unless (defined $data);
 	
 	# check the packet...
-	my @answer = $packet->answer();
-	my @authority = $packet->authority();
-	my @additional = $packet->additional();
+	my $answer = $data->{answer};
+	my $authority = $data->{authority};
+	my $additional = $data->{additional};
 
 	# print answer section
 	$self->bufApp("") if ($self->{debug});
@@ -97,7 +91,7 @@ sub check {
 	$self->bufApp("--- snip ---");
 	map {
 		$self->bufApp("    " . $_->string());
-	} @answer;
+	} @${answer};
 	$self->bufApp("--- snip ---");
 
 	# print authority section
@@ -105,7 +99,7 @@ sub check {
 	$self->bufApp("--- snip ---");
 	map {
 		$self->bufApp("    " . $_->string());
-	} @authority;
+	} @{$authority};
 	$self->bufApp("--- snip ---");
 	
 	# print additional section
@@ -113,16 +107,22 @@ sub check {
 	$self->bufApp("--- snip ---");
 	map {
 		$self->bufApp("    " . $_->string());
-	} @additional;
+	} @{$additional};
 	$self->bufApp("--- snip ---");
 
 	# any answers? this could be a problem :)
-	unless (@answer) {
+	unless (@{$answer}) {
 		if ($self->{check_authority}) {
-			if (@authority) {
+			if (@{$authority}) {
+				# autority section should contain at least one NS record...
+				my $ns = 0;
+				map { $ns++ if ($_->isa('Net::DNS::RR::NS')) } @{$authority};
+				unless ($ns > 0) {
+					return $self->error("Answer section is empty and authority section doesn't contain any NS records.");
+				}
 				$self->bufApp("");
-				$self->bufApp("Answer section is empty, but authority section contains records.");
-				return 1;
+				$self->bufApp("Answer section is empty, but authority section contains $ns NS record(s).");
+				return CHECK_OK;
 			} else {
 				return $self->error("DNS query finished successfully, but ANSWER and AUTHORITY sections are both empty!");
 			}
@@ -173,6 +173,41 @@ sub getResolver {
 	}
 
 	return $res;
+}
+
+=head2 resolve
+
+ my $res = $self->resolve('host.example.com' [$type = 'A', $class = 'IN', $resolver])
+
+Returns hash reference containing answer, additional and authority section filled
+with arrayrefs of L<Net::DNS::RR> objects on success, otherwise undef.
+
+=cut
+sub resolve {
+	my ($self, $host, $type, $class, $res) = @_;
+	$type = 'A' unless (defined $type);
+	$class = 'IN' unless (defined $class);
+	$res = $self->getResolver() unless (defined $res);
+
+	# send DNS packet to server...
+	local $@;
+	my $packet = eval { $res->send($host, $type, $class) };
+	if ($@) {
+		$self->error("Exception sending packet: $@");
+		return undef;
+	}
+	unless (defined $packet) {
+		$self->error("Unable to resolve: " . $res->errorstring());
+		return undef;
+	}
+	
+	my $result = {
+		answer => [ $packet->answer() ],
+		authority => [ $packet->authority() ],
+		additional => [ $packet->additional() ],
+	};
+
+	return $result;
 }
 
 =head2 zoneAXFR

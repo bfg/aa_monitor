@@ -9,7 +9,7 @@ use Scalar::Util qw(blessed);
 use P9::AA::Constants;
 use base 'P9::AA::Check::DNSZone';
 
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 
 =head1 NAME
 
@@ -29,9 +29,9 @@ sub clearParams {
 	);
 	
 	$self->cfgParamAdd(
-		'peer_nameserver',
+		'nameserver_peers',
 		undef,
-		'Compare specified zone from \'nameserver\' with zone from this nameserver.',
+		'Comma separated list of peer nameservers. Zone will be transferred from all nameservers and compared to referential nameserver.',
 		$self->validate_str(500),
 	);
 	
@@ -52,36 +52,67 @@ sub check {
 	unless (defined $self->{zone} && length($self->{zone}) > 0) {
 		return $self->error("DNS zone is not set");
 	}
-	unless (defined $self->{peer_nameserver} && length($self->{peer_nameserver})) {
-		return $self->error("Peer DNS nameserver host is not set.");
+	unless (defined $self->{nameserver_peers} && length($self->{nameserver_peers})) {
+		return $self->error("DNS nameserver peer hosts are not set.");
 	}
 	
-	# get resolvers...
-	my $res_ref = $self->getResolver($self->{nameserver});
-	return CHECK_ERR unless ($res_ref);
-	my $res_cmp = $self->getResolver($self->{peer_nameserver});
-	return CHECK_ERR unless ($res_cmp);
-
-	# get zones...
-	my $z_ref = $self->zoneAXFR($self->{zone}, $res_ref, $self->{class});
-	return CHECK_ERR unless ($z_ref);
-	my $soa_ref = $z_ref->[0];
-
-	my $z_cmp = $self->zoneAXFR($self->{zone}, $res_cmp, $self->{class});
-	return CHECK_ERR unless ($z_cmp);
-	my $soa_cmp = $z_cmp->[0];
+	# get referential zone...
+	my $zone_ref = $self->zoneTransfer($self->{zone}, $self->{nameserver});
+	return CHECK_ERR unless (defined $zone_ref);
 	
-	#####################
+	# compare nameserver results...
+	my $cmp = {};
 	
-	$self->bufApp("Referential SOA:");
-	$self->bufApp($soa_ref->string());
-	$self->bufApp();
-	$self->bufApp("Comparing SOA:");
-	$self->bufApp($soa_cmp->string());
+	# transfer zones from all nameserver peers
+	foreach my $ns (split(/\s*[;,]+\s*/, $self->{nameserver_peers})) {
+		$ns =~ s/^\s+//g;
+		$ns =~ s/\s+$//g;
+		next unless (length $ns);
+		my $z = $self->zoneTransfer($self->{zone}, $ns);
+		$cmp->{$ns} = [ $z, $self->error() ];
+	}
+	
+	my $warn = '';
+	my $err = '';
+	my $result = CHECK_OK;
+	
+	foreach my $ns (keys %{$cmp}) {
+		my $z = $cmp->{$ns}->[0];
+		my $e = $cmp->{$ns}->[1];
+		# no zone, no fun...
+		unless (defined $z) {
+			$err = "Nameserver $ns: " . $e . "\n";
+			$result = CHECK_ERR;
+			next;
+		}
+		
+		$self->bufApp("Nameserver $ns: zone contains " . ($#{$z} + 1) . " records.");
+		
+		# compare zone data
+		unless ($self->compareZone($zone_ref, $z)) {
+			$err = $self->error() . "\n";
+			$result = CHECK_ERR;
+			next;
+		}
+	}
+	
+	unless ($result == CHECK_OK) {
+		$err =~ s/\s+$//g;
+		$self->error($err);
+	}
+	
+	return $result;
+}
 
-	# compare zone data
-	return CHECK_ERR unless ($self->compareZone($z_ref, $z_cmp));
-	return CHECK_OK;
+sub zoneTransfer {
+	my ($self, $zone, $nameserver) = @_;
+
+	# create resolver...
+	my $res = $self->getResolver($nameserver);
+	return undef unless ($res);
+
+	# transfer zone...
+	return $self->zoneAXFR($zone, $res, $self->{class});
 }
 
 =head2 compareSOA

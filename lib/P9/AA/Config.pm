@@ -58,7 +58,7 @@ Returns singleton instance of L<P9::AA::Config>.
 
 =head2 new
 
-Alias method for L<P9::AA::Config#singleton> method.
+Alias method for L</singleton> method.
 
 =head2 construct
 
@@ -211,8 +211,7 @@ log_level = $self->{_cfg}->{log_level}
 # Possible values: basic, anyevent
 #
 # WARNING: anyevent implementation is highly
-#          experimental and currently supports
-#          only plain http protocol!
+#          experimental!
 daemon_impl = $self->{_cfg}->{daemon_impl}
 
 # maximum concurrent clients
@@ -223,13 +222,13 @@ max_clients = $self->{_cfg}->{max_clients}
 protocol = $self->{_cfg}->{protocol}
 
 # Comma separated list of listening ports or
-# UNIX socket paths
+# UNIX domain listening socket paths
 # Syntax: *:<port>, [<addr>]:<port>, <addr>:<port>, /path/to/listen.sock
 listen_addr = $self->{_cfg}->{listen_addr}
 
-# Listening port. Ignored if listening
-# address is unix socket path.
-listen_port = $self->{_cfg}->{listeni_port}
+# Default listening port for listening addresses
+# that do not explicitly define listening port
+listen_port = $self->{_cfg}->{listen_port}
 
 # Pid file path if running as daemon
 pid_file = $self->{_cfg}->{pid_file}

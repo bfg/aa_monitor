@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 PACKAGE_NAME="aa_monitor"
 PACKAGE_VERSION=`../../bin/aa_monitor -V | awk '{print $2}'`

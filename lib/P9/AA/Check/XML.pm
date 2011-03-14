@@ -12,9 +12,10 @@ use File::Temp qw(tempfile);
 use Digest::MD5 qw(md5_hex);
 
 use P9::AA::Constants;
+use P9::AA::Config;
 use base 'P9::AA::Check::URL';
 
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 
 my $xmllint_errs = {
 	0 => "No error",
@@ -29,6 +30,7 @@ my $xmllint_errs = {
 	9 => "Out of memory error",
 };
 
+my $cfg = P9::AA::Config->new();
 
 =head1 NAME
 
@@ -193,6 +195,7 @@ sub validateXMLStrict {
 	my $schema_urls = $self->_getXmlSchemasFromFile($file);
 	unless (defined $schema_urls) {
 		$self->error("Unable to parse schemas: " . $self->error());
+		unlink($file) if ($file_remove);
 		return 0;
 	}
 
@@ -200,15 +203,18 @@ sub validateXMLStrict {
 	push(@{$schema_urls}, @schemas) if (@schemas);
 	
 	# compute schema filenames...
-	my $tmpdir = File::Spec->tmpdir();
+	my $tmpdir = $cfg->get('var_dir');
 	my $s = {};
 	map {
-		$s->{$_} = File::Spec->catfile($tmpdir, $> . "-xmlvalidate-" . md5_hex($_)) . ".xsd"; 
+		$s->{$_} = File::Spec->catfile($tmpdir, $> . "-xml-schema-" . md5_hex($_)) . ".xsd"; 
 	} @{$schema_urls};
 
 	# fetch xml schemas...
 	foreach (keys %{$s}) {
-		return 0 unless ($self->_fetchSchema($_, $s->{$_}, $self->{cache_schemas}));
+		unless ($self->_fetchSchema($_, $s->{$_}, $self->{cache_schemas})) {
+			unlink($file) if ($file_remove);
+			return 0;
+		}
 	}
 	
 	# compute schema filenames
@@ -224,7 +230,9 @@ sub validateXMLStrict {
 	unless ($retval) {
 		my $date = strftime("%Y-%m-%d-%H-%M-%S", localtime(time()));
 		my $file_backup = $file . "-backup-" . $date;
-		$self->bufApp("Archiving non-validated XML file as '$file_backup'.");
+		my $msg = "Archiving non-validated XML file as '$file_backup'.";
+		$self->log_warn($msg);
+		$self->bufApp($msg);
 		copy($file, $file_backup);
 	}
 
@@ -240,9 +248,14 @@ sub validateXMLStrict {
 
 sub _writeTmpXML {
 	my ($self, $xml) = @_;
-	my ($fd, $file) = tempfile();
+	my ($fd, $file) = tempfile(
+		$> . '-xmldocument-XXXXX',
+		SUFFIX => '.xml',
+		DIR => $cfg->get('var_dir'),
+	);
 	unless (defined $fd) {
 		$self->error("Error writing XML to temporary file: $!");
+		unlink($file);
 		return undef;
 	}
 	

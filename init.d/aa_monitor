@@ -4,7 +4,7 @@
 # chkconfig: 2345 55 25
 # description: aa_monitor service health checking daemon
 #
-# processname: sshd
+# processname: aa_monitor
 # config: /etc/sysconfig/aa_monitor
 # config: /etc/aa_monitor/aa_monitor.conf
 # pidfile: /var/run/aa_monitor.pid

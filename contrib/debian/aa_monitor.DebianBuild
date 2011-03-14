@@ -39,10 +39,10 @@ echo ""
 	export PACKAGE_NAME PACKAGE_VERSION
 
 	# create directories
-	mkdir -p etc/{default,init.d}	|| die "Unable to create init.d dirs."
+	mkdir -p etc/{default,init.d,aa_monitor}	|| die "Unable to create init.d dirs."
 	mkdir -p usr/{s,}bin || die "Unable to create bin dirs."
 	mkdir -p usr/share/perl5 || die "Unable to create perl lib dirs."
-	mkdir -p usr/share/aa_monitor || die "Unable to create share dirs."
+	mkdir -p usr/share/aa_monitor/etc/{default,aa_monitor} || die "Unable to create share dirs."
 	mkdir -p usr/lib/aa_monitor || die "Unable to create lib dirs."
 	
 	# binaries
@@ -65,7 +65,7 @@ echo ""
 	
 	# sysinit script...
 	cp $BASEDIR/init.d/aa_monitor etc/init.d || die "Unable to install init.d script."
-	cp $BASEDIR/init.d/sysconfig/aa_monitor etc/default || die "Unable to install init.d script defaults."
+	cp $BASEDIR/init.d/sysconfig/aa_monitor usr/share/aa_monitor/etc/default || die "Unable to install init.d script defaults."
 
 	# change owner...
 	chown -R root:root .

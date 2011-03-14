@@ -1,15 +1,5 @@
 #!/bin/sh
 
-# $Id: postinst 1670 2010-03-02 11:12:49Z bfg $
-# $Date: 2010-03-02 12:12:49 +0100 (Tue, 02 Mar 2010) $
-# $Author: bfg $
-# $Revision: 1670 $
-# $LastChangedRevision: 1670 $
-# $LastChangedBy: bfg $
-# $LastChangedDate: 2010-03-02 12:12:49 +0100 (Tue, 02 Mar 2010) $
-# $URL: https://svn.interseek.com/repositories/admin/aa_monitor/trunk/contrib/debian/DEBIAN/postinst $
-
-
 # aa_monitor should start at system startup...
 update-rc.d -f aa_monitor defaults >/dev/null 2>&1
 
@@ -24,9 +14,8 @@ case $1 in
 		#:       --slave /usr/share/man/man1/program.1.gz program.1.gz \
 		#:               /usr/share/man/man1/alternative.1.gz
 
-		ucf /usr/share/aa_monitor/aa_monitoir /etc/default/aa_monitor
-		
-
+		ucf /usr/share/aa_monitor/etc/default/aa_monitor /etc/default/aa_monitor
+		ucf /usr/share/aa_monitor/etc/aa_monitor/aa_monitor.conf /etc/aa_monitor/aa_monitor.conf
 		;;
 
 	# Back out of an attempt to upgrade this package FROM THIS VERSION

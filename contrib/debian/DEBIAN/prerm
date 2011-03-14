@@ -1,19 +1,10 @@
 #!/bin/sh
 
-# $Id: prerm 1670 2010-03-02 11:12:49Z bfg $
-# $Date: 2010-03-02 12:12:49 +0100 (Tue, 02 Mar 2010) $
-# $Author: bfg $
-# $Revision: 1670 $
-# $LastChangedRevision: 1670 $
-# $LastChangedBy: bfg $
-# $LastChangedDate: 2010-03-02 12:12:49 +0100 (Tue, 02 Mar 2010) $
-# $URL: https://svn.interseek.com/repositories/admin/aa_monitor/trunk/contrib/debian/DEBIAN/prerm $
+# shutdown aa_monitor service
+service aa_monitor stop
 
 # aa_monitor shouldn't start at system startup
 update-rc.d -f aa_monitor disable
 update-rc.d -f aa_monitor remove
-
-# shutdown aa_monitor service
-service aa_monitor stop
 
 # EOF

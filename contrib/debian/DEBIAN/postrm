@@ -1,14 +1,5 @@
 #!/bin/sh
 
-# $Id: postrm 1670 2010-03-02 11:12:49Z bfg $
-# $Date: 2010-03-02 12:12:49 +0100 (Tue, 02 Mar 2010) $
-# $Author: bfg $
-# $Revision: 1670 $
-# $LastChangedRevision: 1670 $
-# $LastChangedBy: bfg $
-# $LastChangedDate: 2010-03-02 12:12:49 +0100 (Tue, 02 Mar 2010) $
-# $URL: https://svn.interseek.com/repositories/admin/aa_monitor/trunk/contrib/debian/DEBIAN/postrm $
-
 # postrm.skeleton
 # Skeleton maintainer script showing all the possible cases.
 # Written by Charles Briscoe-Smith, March-June 1998.	Public Domain.
@@ -43,18 +34,15 @@ case "$1" in
 		### Some of the following is from Tore Anderson:
 		for ext in '~' '%' .bak .ucf-new .ucf-old .ucf-dist;	do
 			rm -f /etc/default/aa_monitor$ext
+			rm -f /etc/aa_monitor/*$ext
 		done
  
+		ucf --purge /etc/default/aa_monitor
+		ucf --purge /etc/aa_monitor/aa_monitor.conf
+
 		# remove the configuration file itself
 		rm -f /etc/default/aa_monitor
-
-		# and finally clear it out from the ucf database
-		if which ucf >/dev/null; then
-				ucf --purge /etc/default/aa_monitor
-		fi		
-		if which ucfr >/dev/null; then
-				ucfr --purge aa_monitor /etc/default/aa_monitor
-		fi		
+		rm -rf /etc/aa_monitor
 
 		# Remove symlinks from /etc/rc?.d
 		update-rc.d aa_monitor remove >/dev/null

@@ -203,7 +203,7 @@ sub which {
 		return undef;
 	}
 
-	foreach my $dir (split(/[:;]+/, $ENV{PATH}), "/sbin", "/usr/sbin", "/usr/local/sbin") {
+	foreach my $dir (split(/[:;]+/, $ENV{PATH}), "/usr/local/bin", "/sbin", "/usr/sbin", "/usr/local/sbin") {
 		my $f = File::Spec->catfile($dir, $prog);
 		return $f if (-x $f);
 		

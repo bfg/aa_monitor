@@ -31,7 +31,29 @@ standalone HTTP
 
 =head4 Nginx
 
+ location /aa_monitor/ {
+ 	proxy_pass http://localhost:1552/;
+ }
+
 =head4 Apache
+
+ <IfModule mod_proxy_http.c>
+        # Common HTTP reverse proxy configuration
+        ProxyRequests Off
+        ProxyPreserveHost On
+        ProxyVia Off
+        ProxyErrorOverride Off
+
+        # Reverse proxy stuff ;)
+        <Proxy *>
+                Order deny,allow
+                Allow from all
+        </Proxy>
+ 
+        ProxyPass /aa_monitor/ http://localhost:1552/
+ </IfModule>
+
+
 
 =head2 STANDALONE FastCGI daemon
 
@@ -67,7 +89,14 @@ only need to configure Your webserver
 
 =head3 Apache CGI configuration
 
- dsfdsf
+ # aa_monitor configuration
+ AcceptPathInfo On
+ ScriptAlias /cgi-bin/aa_monitor "/path/to/aa_monitor/bin/aa_monitor"
+ <Directory /path/to/aa_monitor/bin>
+    Order allow,deny
+    Allow from all
+ 	Options +ExecCGI
+ </Directory>
 
 =head2 COMMAND LINE CLIENT
 
@@ -318,10 +347,11 @@ B<XML> request body:
 B<WARNING:> POST request body is parsed according to B<Content-Type:> request
 header. Currenty only B<(application|text)/(json|xml)> are supported.
 
-=head2 REST CALLS
+=head2 REST HANDLER
 
- # 
- http://host.example.org/
+ http://host.example.org/FSUsage					# check fsusage, browser-friendly url
+ http://host.example.org/FSUsage?output_type=json	# fsusage check, force JSON response
+ http://host.example.org/FSUsage.json				# fsusage check, force JSON response
 
 =head1 LIST OF CURRENTLY IMPLEMENTED MODULES:
 

@@ -25,7 +25,7 @@ use P9::AA::Constants qw(:all);
 #############################################################
 my $MYNAME= basename($0);
 
-our $VERSION = '1.0.0_2';
+our $VERSION = '1.0.0';
 
 my $log = P9::AA::Log->new();
 my $cfg = P9::AA::Config->new();

@@ -13,6 +13,8 @@ use P9::AA::Log;
 
 use constant MAX_LINES => 500;
 
+our $VERSION = 0.19;
+
 my $log = P9::AA::Log->new();
 my @_cfg_files = (
 	realpath(
@@ -112,6 +114,7 @@ sub reset {
 
 	$self->{_cfg} = {
 		enable_doc => 1,
+		var_dir => File::Spec->tmpdir(),
 		
 		# daemon options
 		listen_addr => '*',
@@ -131,7 +134,6 @@ sub reset {
 		protocol => 'http',
 
 		# SSL/TLS stuff
-		ssl_enabled => 0,
 		ssl_cert_file => undef,
 		ssl_key_file => undef,
 		ssl_ca_file => undef,
@@ -197,6 +199,29 @@ sub toString {
 # enable documentation rendering?
 enable_doc = $self->{_cfg}->{enable_doc}
 
+# directory for various runtime data
+var_dir = $self->{_cfg}->{var_dir}
+
+# log level
+log_level = $self->{_cfg}->{log_level}
+
+# DAEMON OPTIONS...
+
+# daemon implementation
+# Possible values: basic, anyevent
+#
+# WARNING: anyevent implementation is highly
+#          experimental and currently supports
+#          only plain http protocol!
+daemon_impl = $self->{_cfg}->{daemon_impl}
+
+# maximum concurrent clients
+max_clients = $self->{_cfg}->{max_clients}
+		
+# Protocol selection
+# Possible values: http, https, cgi, fastcgi
+protocol = $self->{_cfg}->{protocol}
+
 # Comma separated list of listening ports or
 # UNIX socket paths
 # Syntax: *:<port>, [<addr>]:<port>, <addr>:<port>, /path/to/listen.sock
@@ -221,33 +246,8 @@ chroot = $self->{_cfg}->{chroot}
 # Run in background/daemonize (boolean)
 daemon = $self->{_cfg}->{daemon}
 
-# log level
-log_level = $self->{_cfg}->{log_level}
-
-# DAEMON OPTIONS...
-
-# daemon implementation
-# Possible values: basic, anyevent
-#
-# WARNING: anyevent implementation is highly
-#          experimental and currently supports
-#          only plain http protocol!
-daemon_impl = $self->{_cfg}->{daemon_impl}
-
-# maximum concurrent clients
-max_clients = $self->{_cfg}->{max_clients}
-		
-# Protocol selection
-# Possible values: http, https, cgi, fastcgi
-protocol = $self->{_cfg}->{protocol}
-
 # SSL/TLS stuff
-
-# Enable SSL on listening socket (boolean)?
-# NOTE: This option could be automatically changed
-# depending to selected protocol
-ssl_enabled = $self->{_cfg}->{ssl_enabled}
-
+#
 # See perldoc IO::Socket::SSL
 # for details of the following
 # configuration parameters.

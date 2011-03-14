@@ -19,6 +19,7 @@ use P9::AA::Log;
 our $VERSION = 0.10;
 my $log = P9::AA::Log->new();
 my $u = P9::AA::Util->new();
+my $cfg = P9::AA::Config->new();
 
 =head1 NAME
 
@@ -148,7 +149,7 @@ sub check {
 	$hist_new->ident($hashcode);
 	
 	# try to load old history
-	my $hist_old = $hist_new->load($hashcode);
+	my $hist_old = $hist_new->load($hashcode, $cfg->get('var_dir'));
 	# $hist_old->setIdent($hashcode);
 
 	# assign history objects...
@@ -389,7 +390,7 @@ sub _doHistory {
 	}
 	
 	# save new history
-	unless ($new->save()) {
+	unless ($new->save($cfg->get('var_dir'))) {
 		$log->warn("[$id] Error saving history data: " . $new->error());
 	}
 

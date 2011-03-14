@@ -8,7 +8,7 @@ use Scalar::Util qw(blessed);
 use P9::AA::Constants;
 use base 'P9::AA::Check::DNS';
 
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 
 =head1 NAME
 
@@ -40,94 +40,62 @@ sub check {
 	unless (defined $self->{host} && length($self->{host}) > 0) {
 		return $self->error("Query host is not set.");
 	}
-	# compute peers...
-	my @peer_hosts = ();
-	{
-		no warnings;
-		map {
-			if (defined $_ && length $_) {
-				push(@peer_hosts, $_);
-			}
-		} split(/\s*[,;]+\s*/, $self->{nameserver_peers});
+	
+	my @peers = $self->_peer_list($self->{nameserver_peers});
+	unless (@peers) {
+		return $self->error("DNS nameserver peer hosts are not set.");
 	}
-	unless (@peer_hosts) {
-		return $self->error("No peer nameservers defined.");
+	
+	# get referential data
+	my $data_ref = $self->resolve($self->{host}, $self->{type}, $self->{class}, $self->{nameserver});
+	unless (defined $data_ref) {
+		return $self->error("Error resolving referential data: " . $self->error());
 	}
+	
+	$self->bufApp("--- BEGIN REFERENTIAL DATA ---");
+	$self->bufApp($self->dnsPacketToStr($data_ref));
+	$self->bufApp("--- END REFERENTIAL DATA ---");
+	$self->bufApp();
 
-	# create referential resolver object
-	my $resolver_ref = $self->getResolver();
-	unless (defined $resolver_ref) {
-		return $self->error("Error creating referential resolver: " . $self->error());
-	}
+	my $cmp = {};
 
-	# create peer resolvers
-	my @peers = ();
-	foreach (@peer_hosts) {
-		my $r = $self->getResolver($_);
-		unless (defined $r) {
-			return $self->error("Error creating comparing resolver $_: ", $self->error());
+	# get records from peer nameservers...
+	foreach my $ns (@peers) {
+		my $d = $self->resolve($self->{host}, $self->{type}, $self->{class}, $ns);
+		$cmp->{$ns} = [ $d, $self->error() ];
+	}
+	
+	my $res = CHECK_OK;
+	my $err = '';
+	
+	# check peers
+	foreach my $ns (keys %{$cmp}) {
+		my $d = $cmp->{$ns}->[0];
+		my $e = $cmp->{$ns}->[1];
+		unless (defined $d) {
+			$err = "Nameserver $ns: " . $e . "\n";
+			$res = CHECK_ERR;
+			next;
+		}
+		
+		$self->bufApp("--- BEGIN $ns ---");
+		$self->bufApp($self->dnsPacketToStr($d));
+		$self->bufApp("--- END $ns ---");
+		$self->bufApp();
+		
+		# compare data with referential one...
+		unless ($self->_compare($data_ref, $d)) {
+			$err .= "Nameserver $ns: " . $self->error() . "\n";
+			$res = CHECK_ERR;
+			next;
 		}
 	}
 
-=pod
-	# send DNS packet to server...
-	local $@;
-	my $packet = eval { $res->send($self->{host}, $self->{type}, $self->{class}) };
-	if ($@) {
-		return $self->error("Exception sending packet: $@");
+	unless ($res == CHECK_OK) {
+		$err =~ s/\s+$//g;
+		$self->error($err);
 	}
-	unless (defined $packet) {
-		return $self->error("Unable to resolve: " . $res->errorstring());
-	}
-	
-	# check the packet...
-	my @answer = $packet->answer();
-	my @authority = $packet->authority();
-	my @additional = $packet->additional();
-
-	# print answer section
-	$self->bufApp("") if ($self->{debug});
-	$self->bufApp("ANSWER section:");
-	$self->bufApp("--- snip ---");
-	map {
-		$self->bufApp("    " . $_->string());
-	} @answer;
-	$self->bufApp("--- snip ---");
-
-	# print authority section
-	$self->bufApp("AUTHORITY section:");
-	$self->bufApp("--- snip ---");
-	map {
-		$self->bufApp("    " . $_->string());
-	} @authority;
-	$self->bufApp("--- snip ---");
-	
-	# print additional section
-	$self->bufApp("ADDITIONAL section:");
-	$self->bufApp("--- snip ---");
-	map {
-		$self->bufApp("    " . $_->string());
-	} @additional;
-	$self->bufApp("--- snip ---");
-
-	# any answers? this could be a problem :)
-	unless (@answer) {
-		if ($self->{check_authority}) {
-			if (@authority) {
-				$self->bufApp("");
-				$self->bufApp("Answer section is empty, but authority section contains records.");
-				return 1;
-			} else {
-				return $self->error("DNS query finished successfully, but ANSWER and AUTHORITY sections are both empty!");
-			}
-		}
-
-		return $self->error("DNS query finished successfully, but no records were returned in ANSWERS dns packet section!");
-	}
-=cut
-
-	# return success...
-	return $self->success();
+	return $res;
 }
 
 sub toString {
@@ -137,9 +105,40 @@ sub toString {
 		$self->{type} . '/' .
 		$self->{class} .
 		' [' .
-		$self->{nameserver} . ' <=> ' . $self->{nameserver_peers}. ']';
+		$self->{nameserver} . ' <=> ' .
+		join(",", $self->_peer_list($self->{nameserver_peers})) .
+		']';
 }
 
+sub _compare {
+	my ($self, $ref, $cmp) = @_;
+	unless (defined $ref && ref($ref) eq 'HASH') {
+		$self->error("Invalid referential structure.");
+		return 0;
+	}
+	unless (defined $cmp && ref($cmp) eq 'HASH') {
+		$self->error("Invalid comparing structure.");
+		return 0;
+	}
+
+	# answer
+	unless ($self->_compareRecords($ref->{answer}, $cmp->{answer})) {
+		$self->error("Answer section differs: " . $self->error());
+		return 0;
+	}
+	# additional
+	unless ($self->_compareRecords($ref->{additional}, $cmp->{additional})) {
+		$self->error("Additional section differs: " . $self->error());
+		return 0;
+	}
+	# authority
+	unless ($self->_compareRecords($ref->{authority}, $cmp->{authority})) {
+		$self->error("Authority section differs: " . $self->error());
+		return 0;
+	}
+
+	return 1;
+}
 
 =head1 SEE ALSO
 

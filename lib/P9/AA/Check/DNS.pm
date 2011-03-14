@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Net::DNS;
+use Digest::MD5 qw(md5_hex);
 use Scalar::Util qw(blessed);
 
 use P9::AA::Constants;
@@ -59,7 +60,7 @@ sub clearParams {
 	$self->cfgParamAdd(
 		'check_authority',
 		0,
-		'Check authority section.',
+		'Check authority section for NS records in case of empty answer section.',
 		$self->validate_bool(),
 	);
 	
@@ -89,9 +90,12 @@ sub check {
 	$self->bufApp("") if ($self->{debug});
 	$self->bufApp("ANSWER section:");
 	$self->bufApp("--- snip ---");
+	my $types = 0;
 	map {
 		$self->bufApp("    " . $_->string());
+		$types++ if ($_->isa('Net::DNS::RR::' . uc($self->{type})))
 	} @${answer};
+	
 	$self->bufApp("--- snip ---");
 
 	# print authority section
@@ -111,7 +115,15 @@ sub check {
 	$self->bufApp("--- snip ---");
 
 	# any answers? this could be a problem :)
-	unless (@{$answer}) {
+	if (@{$answer}) {
+		# count type matches...
+		my $type_matches = 0;
+		map { $type_matches++ if ($_->isa('Net::DNS::RR::' . uc($self->{type}))) } @{$answer};
+		unless ($type_matches > 0) {
+			return $self->error("Answer section doesn't contain any records of type $self->{type}.");
+		}
+		$self->bufApp("Answer section contains $type_matches $self->{type} type records.");
+	} else {
 		if ($self->{check_authority}) {
 			if (@{$authority}) {
 				# autority section should contain at least one NS record...
@@ -179,15 +191,28 @@ sub getResolver {
 
  my $res = $self->resolve('host.example.com' [$type = 'A', $class = 'IN', $resolver])
 
-Returns hash reference containing answer, additional and authority section filled
-with arrayrefs of L<Net::DNS::RR> objects on success, otherwise undef.
+Returns hash reference containing answer, additional and authority keys containing
+arrayrefs of L<Net::DNS::RR> objects on success, otherwise undef. Optional resolver
+argument can be hostname or initialized L<Net::DNS::Resolver> object.
 
 =cut
 sub resolve {
 	my ($self, $host, $type, $class, $res) = @_;
 	$type = 'A' unless (defined $type);
 	$class = 'IN' unless (defined $class);
-	$res = $self->getResolver() unless (defined $res);
+	
+	if (defined $res) {
+		unless (blessed($res) && $res->isa('Net::DNS::Resolver')) {
+			$res = $self->getResolver($res);
+		}
+	} else {
+		$res = $self->getResolver();
+	}
+	
+	unless (defined $res) {
+		$self->error("Invalid resolver.");
+		return undef;
+	}
 
 	# send DNS packet to server...
 	local $@;
@@ -201,11 +226,34 @@ sub resolve {
 		return undef;
 	}
 	
+	if ($self->{debug}) {
+		$self->bufApp("--- BEGIN RETURNED PACKET ---");
+		$self->bufApp($packet->string());
+		$self->bufApp("--- END RETURNED PACKET ---");
+		$self->bufApp();
+	}
+	
+	# check for bad queries...
+	my $err = $res->errorstring();
+	if (lc($err) ne 'noerror') {
+		$self->error(
+			"Resolver(s) " . join(", ", $res->nameservers()) .
+			" error [host: $host, type: $type, class: $class]: $err"
+		);
+		return undef;
+	}
+
 	my $result = {
 		answer => [ $packet->answer() ],
 		authority => [ $packet->authority() ],
 		additional => [ $packet->additional() ],
 	};
+	
+	# basic checks...
+	unless (@{$result->{answer}} || @{$result->{authority}}) {
+		$self->error("Nothing was resolved: " . $err);
+		return undef;
+	}
 
 	return $result;
 }
@@ -215,7 +263,8 @@ sub resolve {
  my $records = $self->zoneAXFR($name [, $resolver, $class = 'IN']);
 
 Tries to perform zone $name zone transfer. Returns array reference of L<Net::DNS::RR> records
-on success, otherwise undef.
+on success, otherwise undef. Optional $resolver argument can be hostname or L<Net::DNS::Resolver>
+object.
 
 =cut
 sub zoneAXFR {
@@ -224,9 +273,20 @@ sub zoneAXFR {
 		$self->error("Invalid/Undefined zone name.");
 		return undef;
 	}
-	$res = $self->getResolver() unless (blessed($res) && $res->isa('Net::DNS::Resolver'));
 	$class = 'IN' unless (defined $class && length($class));
 	$class = uc($class);
+
+	if (defined $res) {
+		unless (blessed($res) && $res->isa('Net::DNS::Resolver')) {
+			$res = $self->getResolver($res);
+		}
+	} else {
+		$res = $self->getResolver();
+	}
+	unless (defined $res) {
+		$self->error("Invalid resolver.");
+		return undef;
+	}
 
 	# prepare error message prefix
 	my $ns_list = join(', ', $res->nameservers());
@@ -260,6 +320,91 @@ sub zoneAXFR {
 	}
 
 	return $result;	
+}
+
+=head2 dnsPacketToStr
+
+ my $str = $self->dnsPacketToStr($packet);
+
+Returns nice string representation of $packet. $packet can be L<Net::DNS::Packet> object
+or hash reference returned by L</resolve> method.
+
+=cut
+sub dnsPacketToStr {
+	my ($self, $packet) = @_;
+	my $buf = '';
+	
+	my @answer = ();
+	my @authority = ();
+	my @additional = ();
+	
+	if (blessed($packet) && $packet->isa('Net::DNS::Packet')) {
+		@answer = $packet->answer();
+		@authority = $packet->authority();
+		@additional = $packet->additional();
+	}
+	elsif (ref($packet) eq 'HASH') {
+		@answer = @{$packet->{answer}};
+		@authority = @{$packet->{authority}};
+		@additional = @{$packet->{additional}};
+	}
+	
+	$buf .= "--- ANSWER ---\n";
+	map { $buf .= $_->string . "\n" } @answer;
+	$buf .= "--- AUTHORITY\n";
+	map { $buf .= $_->string . "\n" } @authority;
+	$buf .= "--- ADDITIONAL\n";
+	map { $buf .= $_->string . "\n" } @additional;
+
+	return $buf;
+}
+
+sub _compareRecords {
+	my ($self, $ref, $cmp) = @_;
+	unless (ref($ref) eq 'ARRAY' && ref($cmp) eq 'ARRAY') {
+		$self->error("Reference and comparision arguments must both be array refs.");
+		return 0;
+	}
+
+	my @r = ();
+	my @cmp = ();
+	foreach (@{$ref}) {
+		next unless (blessed($_) && $_->isa('Net::DNS::RR'));
+		push(@r, $_->string());
+	}
+	foreach (@{$cmp}) {
+		next unless (blessed($_) && $_->isa('Net::DNS::RR'));
+		push(@cmp, $_->string());
+	}
+	
+	# create string buffers...
+	my $buf_ref = join("\n", sort(@r));
+	my $buf_cmp = join("\n", sort(@cmp));
+	
+	# create digests.
+	my $digest_ref = md5_hex($buf_ref);
+	my $digest_cmp = md5_hex($buf_cmp);
+	
+	if ($digest_ref ne $digest_cmp) {
+		$self->error("\nRef:\n" . $buf_ref . "\nvs.\nCmp:\t" . $buf_cmp . "\n");
+		return 0;
+	}
+	
+	return 1;
+}
+
+sub _peer_list {
+	my ($self, $str) = @_;
+	my @res = ();
+	return @res unless (defined $str && length($str));
+	foreach (split(/\s*[;,]+\s*/, $str)) {
+		$_ =~ s/^\s+//g;
+		$_ =~ s/\s+$//g;
+		next unless (length $_);
+		push(@res, $_);
+	}
+
+	return sort @res;
 }
 
 =head1 SEE ALSO

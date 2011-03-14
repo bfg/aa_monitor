@@ -3,7 +3,6 @@ package P9::AA::Check::DNSZoneConsistency;
 use strict;
 use warnings;
 
-use Digest::MD5 qw(md5_hex);
 use Scalar::Util qw(blessed);
 
 use P9::AA::Constants;
@@ -43,7 +42,8 @@ sub toString {
 	no warnings;
 	return $self->{zone} .
 		' ' . $self->{nameserver} .
-		' <=> ' . $self->{peer_nameserver} .
+		' <=> ' .
+		join(",", $self->_peer_list($self->{nameserver_peers})) .
 		' / ' . $self->{class};
 }
 
@@ -52,7 +52,9 @@ sub check {
 	unless (defined $self->{zone} && length($self->{zone}) > 0) {
 		return $self->error("DNS zone is not set");
 	}
-	unless (defined $self->{nameserver_peers} && length($self->{nameserver_peers})) {
+
+	my @peers = $self->_peer_list($self->{nameserver_peers});
+	unless (@peers) {
 		return $self->error("DNS nameserver peer hosts are not set.");
 	}
 	
@@ -60,14 +62,16 @@ sub check {
 	my $zone_ref = $self->zoneTransfer($self->{zone}, $self->{nameserver});
 	return CHECK_ERR unless (defined $zone_ref);
 	
+	$self->bufApp(
+		"Referential DNS server $self->{nameserver} zone contains " .
+		($#{$zone_ref} + 1) . " records."
+	);
+	
 	# compare nameserver results...
 	my $cmp = {};
 	
 	# transfer zones from all nameserver peers
-	foreach my $ns (split(/\s*[;,]+\s*/, $self->{nameserver_peers})) {
-		$ns =~ s/^\s+//g;
-		$ns =~ s/\s+$//g;
-		next unless (length $ns);
+	foreach my $ns (@peers) {
 		my $z = $self->zoneTransfer($self->{zone}, $ns);
 		$cmp->{$ns} = [ $z, $self->error() ];
 	}
@@ -86,7 +90,7 @@ sub check {
 			next;
 		}
 		
-		$self->bufApp("Nameserver $ns: zone contains " . ($#{$z} + 1) . " records.");
+		$self->bufApp("Peer nameserver $ns: zone contains " . ($#{$z} + 1) . " records.");
 		
 		# compare zone data
 		unless ($self->compareZone($zone_ref, $z)) {
@@ -196,46 +200,9 @@ sub compareZone {
 	my $soa_ref = $ref->[0];
 	my $soa_cmp = $cmp->[0];
 	return 0 unless ($self->compareSOA($soa_ref, $soa_cmp));
-
-	# now compare data records
-	my @s_ref = ();
-	for (my $i = 1; $i < $#{$ref}; $i++) {
-		my $e = $ref->[$i];
-		next unless (blessed($e) && $e->isa('Net::DNS::RR'));
-		push(@s_ref, $e->string());
-	}
-	my $buf_ref = join("\n", sort(@s_ref));
-
-	my @s_cmp = ();
-	for (my $i = 1; $i < $#{$cmp}; $i++) {
-		my $e = $cmp->[$i];
-		next unless (blessed($e) && $e->isa('Net::DNS::RR'));
-		push(@s_cmp, $e->string());
-	}
-	my $buf_cmp = join("\n", sort(@s_cmp));
 	
-	if ($self->{debug}) {
-		$self->bufApp('--- BEGIN REFERENTIAL ZONE ---');
-		$self->bufApp($buf_ref);
-		$self->bufApp('--- END REFERENTIAL ZONE ---');
-		$self->bufApp();
-		$self->bufApp('--- BEGIN COMPARING ZONE ---');
-		$self->bufApp($buf_cmp);
-		$self->bufApp('--- END COMPARING ZONE ---');
-	}
-	
-	# create digests.
-	my $digest_ref = md5_hex($buf_ref);
-	my $digest_cmp = md5_hex($buf_cmp);
-
-	# compare digests.
-	unless ($digest_ref eq $digest_cmp) {
-		$self->error("Zone data checksums differ between referential and compared nameserver.");
-		return 0;
-	}
-	
-	# we survived, zones are ok!
-	return 1;
+	# compare data records...
+	return $self->_compareRecords($ref, $cmp);
 }
 
 =head1 SEE ALSO

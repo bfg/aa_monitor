@@ -44,6 +44,9 @@ case $1 in
 
 esac
 
+# TODO: remove in future versions
+killall -9 aa_monitor.pl >/dev/null 2>&1
+
 # restart aa_monitor service...
 service aa_monitor restart
 

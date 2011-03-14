@@ -33,6 +33,8 @@ mkdir -p "${DESTDIR}/install"
 	mkdir -p usr/sbin
 	mkdir -p usr/bin
 	mkdir -p usr/lib/aa_monitor
+	mkdir -p etc/aa_monitor
+	mkdir -p var/lib/aa_monitor
 	
 	# copy stuff
 	cp -ra $BASEDIR/bin/* usr/sbin
@@ -69,6 +71,7 @@ mkdir -p "${DESTDIR}/install"
 
 	mkdir -p etc/sysconfig
 	cp "$BASEDIR/init.d/sysconfig/aa_monitor" etc/sysconfig/aa_monitor.new
+	cp "$BASEDIR/init.d/aa_monitor.conf" etc/aa_monitor/aa_monitor.conf.new
 	###################################################
 
 	# remove svn stuff

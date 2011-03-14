@@ -16,6 +16,7 @@ config() {
 
 # install configuration file
 config etc/sysconfig/aa_monitor.new
+config etc/aa_monitor/aa_monitor.conf.new
 
 # restart aa_monitor
 etc/init.d/aa_monitor restart

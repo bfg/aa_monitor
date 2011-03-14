@@ -17,8 +17,5 @@ Depends: perl,
  libsys-syslog-perl,
  libxml-simple-perl
 Maintainer: bfg@frost.ath.cx
-Description: aa_monitor - AdminAlert monitor package
- 
- This software is modular general purpose health checking system.
- 
- 
+Description: aa_monitor - AdminAlert monitor
+  Modular, general purpose and Nagios compatible service health checking system.

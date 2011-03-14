@@ -6,8 +6,8 @@
 # leave one space after the ':'.
 
           |-----handy-ruler------------------------------------------------------|
-aa_monitor: aa_monitor - AdminAlert monitor package
+aa_monitor: aa_monitor - AdminAlert monitor
 aa_monitor:
-aa_monitor: This software is modular general purpose health checking system. 
-aa_monitor:
+aa_monitor: Modular, general purpose and Nagios compatible service health
+aa_monitor: checking system.
 aa_monitor:

@@ -15,7 +15,9 @@ Depends: perl,
  libnet-ldap-perl,
  libstorable-perl,
  libsys-syslog-perl,
- libxml-simple-perl
+ libxml-simple-perl,
+ libio-socket-inet6-perl,
+ libnet-inet6glue-perl
 Maintainer: bfg@frost.ath.cx
 Description: aa_monitor - AdminAlert monitor
   Modular, general purpose and Nagios compatible service health checking system.

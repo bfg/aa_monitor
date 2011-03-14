@@ -46,9 +46,10 @@ mkdir -p "${DESTDIR}/install"
 	#                     SYSVINIT                    #
 	###################################################
 	mkdir -p etc/rc.d/init.d etc/rc.d/rc{1,2,3,4,5,6}.d
-	cat "$BASEDIR/init.d/aa_monitor" | \
-		sed -e 's/^PROGNAME=.*/PROGNAME=\"\/usr\/sbin\/aa_monitor.pl\"/g' > \
-		etc/rc.d/init.d/aa_monitor
+#	cat "$BASEDIR/init.d/aa_monitor" | \
+#		sed -e 's/^PROGNAME=.*/PROGNAME=\"\/usr\/sbin\/aa_monitor.pl\"/g' > \
+#		etc/rc.d/init.d/aa_monitor
+	cp "$BASEDIR/init.d/aa_monitor etc/rc.d/init.d/aa_monitor || die "Unable to install init script."
 	chmod 755 etc/rc.d/init.d/aa_monitor
 
 	# install sysv startup symlinks...

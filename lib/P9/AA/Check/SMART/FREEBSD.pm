@@ -12,7 +12,7 @@ Generic *BSD implementation of SMART disk health check monitoring module.
 =cut
 
 sub getDeviceGlobPatterns {
-	return [ '/dev/{ad,da}d?' ];
+	return [ '/dev/{ad,da}?' ];
 }
 
 =head1 AUTHOR

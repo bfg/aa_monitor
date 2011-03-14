@@ -183,9 +183,10 @@ Returns array reference of discovered disk devices on success, otherwise undef.
 sub discoverDevices {
 	my ($self) = @_;
 	my $patterns = $self->getDeviceGlobPatterns();
+	$self->bufApp("Device patterns: " . $self->dumpVarCompact($patterns)) if ($self->{debug});
 	return undef unless ($patterns);
 
-	my $res = [];	
+	my $res = [];
 	foreach my $patt (@{$patterns}) {
 		if (GLOB_ERROR != 0) {
 			$self->error("Error discovering disk devices: $!");
@@ -193,9 +194,12 @@ sub discoverDevices {
 		}	
 		my @devs = bsd_glob($patt);
 
+		push(@{$res}, @devs);
 		# must be valid block device
-		map { push(@{$res}, $_) if (-e $_ && -b $_) } @devs;
+		#map { push(@{$res}, $_) if (-e $_) } @devs;
 	}
+	
+	$self->bufApp("Discovered devices: " . join(", ", @{$res})) if ($self->{debug});
 
 	return $res;
 }
@@ -252,10 +256,6 @@ sub getDeviceData {
 	my ($self, $dev) = @_;
 	unless (defined $dev && length($dev)) {
 		$self->error("Undefined device.");
-		return undef;
-	}
-	unless (-e $dev && -b $dev) {
-		$self->error("Not valid block device: $dev");
 		return undef;
 	}
 	

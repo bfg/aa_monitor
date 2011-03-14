@@ -12,7 +12,7 @@ OpenBSD implementation of SMART disk health check monitoring module.
 =cut
 
 sub getDeviceGlobPatterns {
-	return [ '/dev/{w,s,st}d?' ];
+	return [ '/dev/{wd,sd,st}?c' ];
 }
 
 =head1 AUTHOR

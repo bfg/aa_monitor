@@ -56,12 +56,13 @@ sub process {
 			return 1;
 		}
 		# /doc => documentation?
-		if ($cfg->get('enable_doc') && $path =~ m/\/+doc\/?(.*)/) {
-			my $what = $1;
+		if ($cfg->get('enable_doc') && $path =~ m/(.*)\/+doc\/?(.*)/) {
+			my $prefix = $1;
+			my $what = $2;
 			$what = 'P9/README_AA' unless (defined $what && length($what));
 			$what =~ s/\/+/::/g;
 			$log->debug("Will render documentation: $what");
-			my $body = $self->renderDoc($what);
+			my $body = $self->renderDoc($what, $prefix);
 			unless (defined $body && length $body) {
 				$self->badResponse($stdout, 404);
 				return 1;

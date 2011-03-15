@@ -85,12 +85,13 @@ sub process {
 			return 1;
 		}
 		# /doc => documentation?
-		if ($cfg->get('enable_doc') && $path =~ m/\/+doc\/?(.*)/) {
-			my $what = $1;
+		if ($cfg->get('enable_doc') && $path =~ m/(.*)\/+doc\/?(.*)/) {
+			my $prefix = $1;
+			my $what = $2;
 			$what = 'P9/README_AA' unless (defined $what && length($what));
 			$what =~ s/\/+/::/g;
 			$log->debug("Will render documentation: $what");
-			$self->_renderDoc($what, $resp);
+			$self->_renderDoc($what, $resp, $prefix);
 			$self->sendResponse($sock, $resp);
 			return 1;
 		}
@@ -320,8 +321,9 @@ sub sendResponse {
 }
 
 sub _renderDoc {
-	my ($self, $pkg, $resp) = @_;
-	my $c = $self->renderDoc($pkg);
+	my ($self, $pkg, $resp, $prefix) = @_;
+	$prefix = '/' unless (defined $prefix && length $prefix);
+	my $c = $self->renderDoc($pkg, $prefix);
 	if (defined $c) {
 		$resp->code(200);
 		$resp->content($c);

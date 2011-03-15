@@ -5,6 +5,8 @@ use warnings;
 
 use base 'Pod::Simple::HTML';
 
+our $PREFIX = '/';
+
 sub do_pod_link {
 	# My::Pod object and Pod::Simple::PullParserStartToken object
 	my ($self, $link) = @_;
@@ -13,6 +15,9 @@ sub do_pod_link {
     my $to = $link->attr('to'); 
     my $type = $link->attr('type');
     my $section = $link->attr('section');
+    
+    my $prefix = $PREFIX;
+    $prefix .= '/' unless ($prefix =~ m/\/+$/);
 
 	# Links local to our web site
 	if ($tagname eq 'L' and $type eq 'pod') {
@@ -20,7 +25,7 @@ sub do_pod_link {
 			$to =~ s/["']//g;
 			if ($to =~ /^P9::/) {
 				$to =~ s{::}{/}g;
-				my $r = "/doc/$to";
+				my $r = $prefix . "doc/$to";
 				$r .= "#" . $section if (defined $section && length($section));
 				return $r;
 			}

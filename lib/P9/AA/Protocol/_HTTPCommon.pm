@@ -442,12 +442,16 @@ sub str_addr {
 }
 
 sub renderDoc {
-	my ($self, $pkg) = @_;
+	my ($self, $pkg, $prefix) = @_;
+	$prefix = '/' unless (defined $prefix && length $prefix);
+
 	# load renderer class
 	eval { require P9::AA::PodRenderer };
 	return undef if ($@);
 
 	# render package documentation
+	no warnings;
+	local $HtmlRend::PREFIX = $prefix;
 	return P9::AA::PodRenderer->new()->render($pkg);
 }
 

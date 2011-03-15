@@ -40,7 +40,8 @@ mkdir -p "${DESTDIR}/install"
 	cp -ra $BASEDIR/bin/* usr/sbin
 
 	# libz
-	cp -ra $BASEDIR/lib/* usr/lib/aa_monitor
+	cp -ra $BASEDIR/lib/* usr/lib/aa_monitor || die "Unable to install libraries."
+	cp -ra $BASEDIR/ext/* usr/lib/aa_monitor || die "Unable to install 3rd party libraries."
 	
 	###################################################
 	#                     SYSVINIT                    #

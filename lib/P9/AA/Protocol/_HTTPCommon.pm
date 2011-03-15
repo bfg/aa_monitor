@@ -222,7 +222,7 @@ sub getCheckOutputType {
 
 	# module suffix...
 	my $path = $self->getRequestPath($req);
-	if (defined $path && $path =~ m/\.(\w+)$/) {
+	if (defined $path && $path =~ m/\.(\w+)\/*$/) {
 		$type = $1;
 	}
 
@@ -471,7 +471,6 @@ sub _getRequestHeader {
 	my $v = undef;
 
 	if ($req->isa('CGI') && $req->can('http')) {
-		$log->info("Getting CGI req header: $name ; ct='$ENV{HTTP_CONTENT_TYPE}'");
 		$v = $req->http($name);
 	}
 	elsif ($req->can('header')) {

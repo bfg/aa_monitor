@@ -285,7 +285,7 @@ B<Example:>
  
  my $re = $v->('/^som[aeo]+thing/i');   # returns compiled regular expression
  $v->('/aaa[/');                        # returns undef (bad regex)
- $v->('/aaa[/', $re);                   # returns $re becouse regex string compilation failed
+ $v->('/aaa[/', $re);                   # returns $re because regex string compilation failed
 
 =cut
 sub validator_regex {

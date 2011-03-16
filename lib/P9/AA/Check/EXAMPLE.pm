@@ -143,7 +143,7 @@ sub getExampleData {
 	
 	# simulate data retrieval failure
 	if (rand() > 0.8) {
-		$self->error("Data retrieval failed: BECOUSE IT FAILED.");
+		$self->error("Data retrieval failed: BECAUSE IT FAILED.");
 		return undef;
 	}
 	

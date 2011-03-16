@@ -28,7 +28,7 @@ B<PROTOTYPE:>
 
  $self->process($argv, undef [, $time_start = time() ])
 
-Processes command line invocation ("connection"), never returns becouse ends
+Processes command line invocation ("connection"), never returns because ends
 execution using L<CORE/exit>.
  
 =cut

@@ -151,7 +151,7 @@ JSON output structure:
 
  {
     "success": false,
-    "error": "Unable to get data: Data retrieval failed: BECOUSE IT FAILED.",
+    "error": "Unable to get data: Data retrieval failed: BECAUSE IT FAILED.",
     "data": {
         "environment": {
             "program_version": "1.0.0_2",
@@ -182,7 +182,7 @@ JSON output structure:
             "as_string": "BLABLA/0/12",
             "result_code": 0,
             "messages": "Hello message buffer world from P9::AA::Check::EXAMPLE\nRandom check delay: 0.140786971579304 second(s)\n",
-            "error_message": "Unable to get data: Data retrieval failed: BECOUSE IT FAILED.",
+            "error_message": "Unable to get data: Data retrieval failed: BECAUSE IT FAILED.",
             "warning": false,
             "warning_message": "",
             "id": "284c5e3d"
@@ -327,7 +327,7 @@ B<output_type> query parameter or by specifying ping module extension.
 =head2 REQUEST METHODS
 
 REST inteface support B<GET and POST> request methods. B<POST> request method is
-more flexible, becouse you can send more complex data. POST request method supports
+more flexible, because you can send more complex data. POST request method supports
 XML and JSON request body.
 
 B<JSON> request body:

@@ -13,7 +13,7 @@ use Scalar::Util qw(blessed);
 use P9::AA::Constants;
 use base 'P9::AA::Check::_Socket';
 
-our $VERSION = 0.15;
+our $VERSION = 0.16;
 
 =head1 NAME
 
@@ -119,18 +119,14 @@ sub clearParams {
 
 sub toString {
 	my $self = shift;
-	my $str = $self->{url};
-	return '' unless (defined $str);
+	no warnings;
+	my $str = $self->{request_method};
+	$str .= ' ' . $self->{url};
+	my $hh = $self->{host_header} || $self->{headerHost} || undef;
+	if (defined $hh && length $hh) {
+		$str .= ' host: ' . $hh;
+	}
 
-	# apply host header
-	my $h = $self->{host_header};
-	unless (defined $h && length($h)) {
-		$h = (exists($self->{headerHost})) ? $self->{headerHost} : undef;
-	}
-	if ($h) {
-		$str =~ s/^(.+:\/\/)[^\/]+(\/*.*)/$1$h$2/g;
-	}
-	
 	return $str;
 }
 

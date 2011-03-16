@@ -149,7 +149,7 @@ sub getExampleData {
 	
 	# simulate exception while data retrieval
 	if (rand() > 0.7) {
-		die "HORRIBLE exception accoured while retrieving data.";
+		die "HORRIBLE exception occurred while retrieving data.";
 	}
 	
 	# result structure...

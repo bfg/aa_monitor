@@ -72,4 +72,8 @@ Uros has created or contributed to the following modules:
  * MySQLNDBUsage
  * KIS
 
+=head2 Tilen Kodba Ceh
+
+ * English grammar fixes (proof that gymnasium of Ljutomer is really l33t)
+
 =cut

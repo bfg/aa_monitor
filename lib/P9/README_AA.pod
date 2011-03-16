@@ -164,7 +164,7 @@ JSON output structure:
             "last_result": "error",
             "last_buf": "Hello message buffer world from P9::AA::Check::EXAMPLE\nRandom check delay: 0.12131010981649 second(s)\n",
             "last_time": "1298484073.28082",
-            "last_message": "Exception performing check: HORRIBLE exception accoured while retrieving data.",
+            "last_message": "Exception performing check: HORRIBLE exception occurred while retrieving data.",
             "last_result_code": 0,
             "last_id": "d77f771a",
             "time_diff": 2.37037706375122,

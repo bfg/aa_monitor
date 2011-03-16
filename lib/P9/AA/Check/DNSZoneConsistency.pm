@@ -8,7 +8,7 @@ use Scalar::Util qw(blessed);
 use P9::AA::Constants;
 use base 'P9::AA::Check::DNSZone';
 
-our $VERSION = 0.12;
+our $VERSION = 0.13;
 
 =head1 NAME
 
@@ -62,9 +62,14 @@ sub check {
 	my $zone_ref = $self->zoneTransfer($self->{zone}, $self->{nameserver});
 	return CHECK_ERR unless (defined $zone_ref);
 	
+	my $soa = $zone_ref->[0];
+	my $serial = (blessed($soa) && $soa->isa('Net::DNS::RR::SOA')) ?
+		$soa->serial() :
+		'';
+	
 	$self->bufApp(
 		"Referential DNS server $self->{nameserver} zone contains " .
-		($#{$zone_ref} + 1) . " records."
+		($#{$zone_ref} + 1) . " records [serial: $serial]."
 	);
 	
 	# compare nameserver results...

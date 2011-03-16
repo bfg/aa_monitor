@@ -10,7 +10,7 @@ use Scalar::Util qw(blessed);
 use P9::AA::Constants;
 use base 'P9::AA::Check';
 
-our $VERSION = 0.13;
+our $VERSION = 0.14;
 
 =head1 NAME
 
@@ -29,7 +29,7 @@ sub clearParams {
 
 	$self->cfgParamAdd(
 		'nameserver',
-		'127.0.0.1',
+		$self->_getDefaultNs(),
 		'Hostname of DNS server which will be queried.',
 		$self->validate_lcstr(1024),
 	);
@@ -140,7 +140,7 @@ sub check {
 			}
 		}
 
-		return $self->error("DNS query finished successfully, but no records were returned in ANSWERS dns packet section!");
+		return $self->error("DNS query finished successfully, but no records were returned in ANSWER dns packet section!");
 	}
 
 	# return success...
@@ -405,6 +405,28 @@ sub _peer_list {
 	}
 
 	return sort @res;
+}
+
+sub _getDefaultNs {
+	my ($self) = @_;
+	my $ns = '127.0.0.1';
+	
+	my $fd = IO::File->new('/etc/resolv.conf', 'r');
+	return $ns unless (defined $fd);
+	my $i = 0;
+	while ($i < 100 && defined (my $line = <$fd>)) {
+		$line =~ s/^\s+//g;
+		$line =~ s/\s+$//g;
+		next unless (length $line);
+		next if ($line =~ m/^#/);
+		
+		if ($line =~ m/^nameserver\s+([0-9\.:a-f]+)/) {
+			$ns = $1;
+			last;
+		}
+	}
+	
+	return $ns;
 }
 
 =head1 SEE ALSO

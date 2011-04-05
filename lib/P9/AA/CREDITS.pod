@@ -54,6 +54,12 @@ Modified version used in L<P9::AA::Protocol::FCGI> for fastcgi protocol parsing.
    http://search.cpan.org/~djzort/Net-DHCP-0.67/lib/Net/DHCP/Packet.pm
    License: unknown
 
+=head2 Net::INET6Glue
+
+ * Net::INET6Glue 0.5 by Steffen Ullrich
+   http://search.cpan.org/~sullr/Net-INET6Glue-0.5/lib/Net/INET6Glue.pm
+   License: Perl artistic license
+
 =head2 POD Renderer
 
 POD renderer and HTML pod output is based on L<Mojolicious::Plugin::PodRenderer>, which is

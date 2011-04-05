@@ -13,7 +13,7 @@ use base 'P9::AA::Check';
 
 use constant MAXLINES => 500;
 
-our $VERSION = 0.16;
+our $VERSION = 0.17;
 
 ##################################################
 #              PUBLIC  METHODS                   #
@@ -230,11 +230,15 @@ sub _pingEDACSysfs {
 	
 	# check pci errors
 	my $file = File::Spec->catfile($dir, "pci", "pci_parity_count");
-	unless (defined($data = $self->_readFile($file))) {
-		$self->error("Unable to check PCI parity error count: " . $self->error());
-		return undef;
+	if (-f $file) {
+		unless (defined($data = $self->_readFile($file))) {
+			$self->error("Unable to check PCI parity error count: " . $self->error());
+			return undef;
+		}
+		$res->{pci}->{err_count} = int($data);
+	} else {
+		$res->{pci}->{err_count} = 0;
 	}
-	$res->{pci}->{err_count} = int($data);
 
 	# check memory controller errors
 	$dir = File::Spec->catdir($dir, "mc");
@@ -248,14 +252,18 @@ sub _pingEDACSysfs {
 	closedir($dirh);
 	
 	# read some specific data
-	$self->bufApp("EDAC version: " . $self->_readFile(File::Spec->catfile($dir, "mc_version")));
+	my $ver = $self->_readFile(File::Spec->catfile($dir, "mc_version"));
+	$ver = '' unless (defined $ver);
+	$self->bufApp("EDAC version: " . $ver);
 	$self->bufApp();
 
 	foreach my $entry (sort @contents) {
 		next unless (-d File::Spec->catdir($dir, $entry));
 		next unless ($entry =~ m/^mc\d+$/);
 		my $d = File::Spec->catdir($dir, $entry);
-		$self->bufApp("Checking memory controller '$entry' [" . $self->_readFile(File::Spec->catfile($d, "module_name")) . "].");
+		my $mn = $self->_readFile(File::Spec->catfile($d, "module_name"));
+		$mn = '' unless (defined $mn);
+		$self->bufApp("Checking memory controller '$entry' [" . $mn . "].");
 		$self->bufApp("Counters reset time: " . strftime("%d.%m.%Y at %H:%M:%S", localtime($self->_lastResetTime($entry))));
 
 		unless (opendir($dirh, $d)) {
@@ -297,7 +305,7 @@ sub _pingEDACSysfs {
 		# reset counters on controller if requested		
 		if ($self->{reset_counters}) {
 			my $s = "Reseting counters memory controller '$entry': ";
-			$s .= ($self->_resetCounters($entry)) ? "OK" : "FAILURE [" . $self->{error} . "]";
+			$s .= ($self->resetCounters($entry)) ? "OK" : "FAILURE [" . $self->{error} . "]";
 			$self->bufApp($s);
 		}
 

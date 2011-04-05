@@ -236,8 +236,6 @@ sub _pingEDACSysfs {
 			return undef;
 		}
 		$res->{pci}->{err_count} = int($data);
-	} else {
-		$res->{pci}->{err_count} = 0;
 	}
 
 	# check memory controller errors

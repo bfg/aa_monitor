@@ -92,7 +92,7 @@ sub check {
 	# insert random value
 	my $ins_st = $self->dbiQuery(
 		$db_ref,
-		'INSERT INTO ' . $table_name . 'VALUES (?)',
+		'INSERT INTO ' . $table_name . ' VALUES (?)',
 		$repl_val
 	);
 	unless (defined $ins_st) {

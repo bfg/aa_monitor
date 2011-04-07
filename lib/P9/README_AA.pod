@@ -449,4 +449,8 @@ header. Currenty only B<(application|text)/(json|xml)> are supported.
 
 See L<P9::AA::CREDITS>.
 
+=head1 CHANGELOG
+
+See L<P9::AA::CHANGELOG>
+
 =cut

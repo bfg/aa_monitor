@@ -6,7 +6,7 @@ use warnings;
 use P9::AA::Constants;
 use base 'P9::AA::Check::JSON';
 
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 
 =head1 NAME
 
@@ -22,13 +22,13 @@ sub clearParams {
 	return 0 unless ($self->SUPER::clearParams());
 	
 	$self->setDescription(
-		"Checks MongoDB server status. Check uses MongoDB HTTP rest interface."
+		"Checks MongoDB server status. Check uses MongoDB HTTP REST interface."
 	);
 
 	$self->cfgParamAdd(
 		'mongo',
 		'localhost:28017',
-		'MongoDB HTTP rest interface <host>:<port>',
+		'MongoDB HTTP REST interface <host>:<port>',
 		$self->validate_str(1000),
 	);
 	
@@ -57,7 +57,9 @@ sub check {
 	# check for server status
 	my $d = $self->getServerStatus($self->{mongo});
 	if (defined $d) {
-		$self->bufApp("MongoDB seems to be up and running on $self->{mongo}");
+		my $ver = $d->{version};
+		my $uptime = $d->{uptime};
+		$self->bufApp("MongoDB version $ver seems to be up and running [uptime: $uptime seconds].");
 		return CHECK_OK;
 	}
 

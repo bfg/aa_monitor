@@ -527,7 +527,7 @@ sub _acceptLoop {
 	while (@{$self->{_listeners}}) {
 		while (my @ready = $selector->can_read()) {
 			foreach my $fh (@ready) {
-				$self->_cleanupStaleKids();
+				# $self->_cleanupStaleKids();
 				
 				# accept client's socket
 				my $client = $fh->accept();
@@ -550,14 +550,17 @@ sub _processConnection {
 	my $addr = $self->_getAddr($client);
 
 	# too many clients?
-	my $no_clients = $self->num_clients();
 	my $max_clients = $self->max_clients();
-	if ($no_clients >= $max_clients) {
-		$self->log_warn(
-			"Too many concurrent connections ($no_clients/$max_clients); Dropping client $addr"
-		);
-		$self->_socketCleanup($client);
-		return 0;
+	if ($max_clients > 0) {
+		my $no_clients = $self->num_clients();
+		if ($no_clients >= $max_clients) {
+			$self->log_warn(
+				"Too many concurrent connections ($no_clients/$max_clients); Dropping client $addr"
+			);
+			$self->_socketCleanup($client);
+			# $self->_cleanupStaleKids();
+			return 0;
+		}
 	}
 
 	$self->log_debug("Connection from " . $addr);

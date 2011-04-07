@@ -216,6 +216,8 @@ log_level = $self->{_cfg}->{log_level}
 daemon_impl = $self->{_cfg}->{daemon_impl}
 
 # maximum concurrent clients
+#
+# NOTE: value of 0 removes max_clients limit.
 max_clients = $self->{_cfg}->{max_clients}
 
 # maximum check execution time in seconds

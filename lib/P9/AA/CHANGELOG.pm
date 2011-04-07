@@ -4,6 +4,15 @@ aa_monitor changelog
 
 =head1 VERSIONS
 
+=head2 1.0.4
+
+=over
+
+=item * Daemon: B<max_clients = 0> disables max_clients limit, removed _cleanupStaleKids() checks
+because it crashes perl <= 5.8.8 interpreter. 
+
+=back
+
 =head2 1.0.3
 
 =over

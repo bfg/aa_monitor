@@ -470,14 +470,23 @@ sub _sighInstall {
 		
 		# max clients maybe?
 		$self->max_clients($cfg->get('max_clients'));
+		
+		# reconfigure logger
+		$self->log_level($cfg->get('log_level'));
 	};
 
 	# install sigchld handler
 	$SIG{CHLD} = sub {
+		$self->log_debug("SIGCHLD handler startup.");
+		my $c_start = $self->num_clients();
 		while ((my $pid = waitpid(-1, WNOHANG)) > 0) {
 			# "destroy" client connection
 			delete($self->{_clients}->{$pid});
 		}
+		my $c_finished = $self->num_clients();
+		my $diff = $c_start - $c_finished;
+		
+		$self->log_debug("SIGCHLD handler finished [removed $diff kids, still managing $c_finished kids].");
 	};
 
 	return 1;
@@ -516,19 +525,16 @@ sub _acceptLoop {
 	
 	# enter finite infinite loop
 	while (@{$self->{_listeners}}) {
-		#$self->_cleanupStaleKids();
-
 		while (my @ready = $selector->can_read()) {
-			#$self->_cleanupStaleKids();
-
 			foreach my $fh (@ready) {
+				$self->_cleanupStaleKids();
+				
 				# accept client's socket
 				my $client = $fh->accept();
 			
 				# process accepted socket...
 				$self->_processConnection($client);
 			}
-			#$self->_cleanupStaleKids();
 		}
 	}
 	
@@ -658,18 +664,23 @@ sub _v6Addr {
 
 sub _cleanupStaleKids {
 	my ($self) = @_;
-	$self->log_info("_cleanupStaleKids(); startup.");
+	$self->log_debug("_cleanupStaleKids(): startup.");
 	my $t = time();
-	my $exec_time_max = 10;
+	my $exec_time_max = P9::AA::Config->new()->get('max_execution_time');
 
 	# no child execution time limit?
-	return 1 unless ($exec_time_max > 0);
+	unless (defined $exec_time_max && $exec_time_max > 0) {
+		$self->log_debug("_cleanupStaleKids(): Zero max_execution_time, returning.");
+		return 1;
+	}
 
 	foreach my $pid (%{$self->{_clients}}) {
 		my $time_started = $self->{_clients}->{$pid};
-		next unless (kill(0, $pid));
-		
-		$self->log_info("started: $time_started; max: $exec_time_max, sum: ", ($time_started + $exec_time_max), " t: $t");
+		# is kid dead?
+		unless (kill(0, $pid)) {
+			delete($self->{_clients}->{$pid});
+			next;
+		}
 		
 		# time to forcibly kill child?
 		if (($time_started + $exec_time_max) <= $t) {
@@ -682,9 +693,10 @@ sub _cleanupStaleKids {
 			}
 			
 			# delete child
-			# delete($self->{_clients}->{$pid});
+			delete($self->{_clients}->{$pid});
 		}
 	}
+	$self->log_debug("_cleanupStaleKids(): finished.");
 }
 
 1;

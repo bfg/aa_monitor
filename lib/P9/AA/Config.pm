@@ -129,6 +129,7 @@ sub reset {
 		daemon_impl => 'basic',
 		log_level => 'info',
 		max_clients => 50,
+		max_execution_time => 310,
 		
 		# Protocol selection
 		protocol => 'http',
@@ -216,6 +217,9 @@ daemon_impl = $self->{_cfg}->{daemon_impl}
 
 # maximum concurrent clients
 max_clients = $self->{_cfg}->{max_clients}
+
+# maximum check execution time in seconds
+max_execution_time = $self->{_cfg}->{max_execution_time}
 		
 # Protocol selection
 # Possible values: http, https, cgi, fastcgi

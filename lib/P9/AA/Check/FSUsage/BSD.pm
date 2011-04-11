@@ -20,6 +20,17 @@ sub getUsageInfoCmd {
 	return 'df -k';
 }
 
+sub isPseudoFs {
+	my ($self, $device) = @_;
+	return 1 if ($self->SUPER::isPseudoFs($device));
+	return grep(
+		/^$device$/,
+		qw(
+			devfs fdesc
+		)
+	) ? 1 : 0;
+}
+
 sub _parseInodeInfo {
 	my ($self, $data) = @_;
 	unless (defined $data && ref($data) eq 'ARRAY') {
@@ -32,7 +43,7 @@ sub _parseInodeInfo {
 		shift(@{$data});
 	}
 	
-	my $res = {};
+	my $res = [];
 
 	while (defined (my $line = shift(@{$data}))) {
 		# OSX has " " chars in device names? insane!
@@ -50,13 +61,17 @@ sub _parseInodeInfo {
 		next unless (defined $mntpoint && length($mntpoint));
 		
 		# do it...
-		$res->{$dev} = {
-			mntpoint => $mntpoint,
-			inode_total => ($free + $used),
-			inode_used => $used,
-			inode_free => $free,
-			inode_used_percent => $used_percent,
-		};
+		push(
+			@{$res},
+			{
+				device => $dev,
+				mntpoint => $mntpoint,
+				inode_total => ($free + $used),
+				inode_used => $used,
+				inode_free => $free,
+				inode_used_percent => $used_percent,
+			}
+		);
 	}
 	
 	return $res;
@@ -74,7 +89,7 @@ sub _parseUsageInfo {
 		shift(@{$data});
 	}
 	
-	my $res = {};
+	my $res = [];
 
 	while (defined (my $line = shift(@{$data}))) {
 		# OSX has " " chars in device names? insane!
@@ -90,13 +105,17 @@ sub _parseUsageInfo {
 		$used_percent =~ s/%+//g;
 		
 		# do it...
-		$res->{$dev} = {
-			mntpoint => $mntpoint,
-			kb_total => $total,
-			kb_used => $used,
-			kb_free => $free,
-			kb_used_percent => $used_percent,
-		};
+		push(
+			@{$res},
+			{
+				device => $dev,
+				mntpoint => $mntpoint,
+				kb_total => $total,
+				kb_used => $used,
+				kb_free => $free,
+				kb_used_percent => $used_percent,
+			}
+		);
 	}
 	
 	return $res;

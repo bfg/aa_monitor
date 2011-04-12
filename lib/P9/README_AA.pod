@@ -419,6 +419,8 @@ header. Currenty only B<(application|text)/(json|xml)> are supported.
 
 =item L<MongoDBReplicaSet|P9::AA::Check::MongoDBReplicaSet>
 
+=item L<Mount|P9::AA::Check::Mount>
+
 =item L<MySQLNDB|P9::AA::Check::MySQLNDB>
 
 =item L<MySQLNDBUsage|P9::AA::Check::MySQLNDBUsage>

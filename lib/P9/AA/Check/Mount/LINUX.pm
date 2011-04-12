@@ -7,6 +7,8 @@ use IO::File;
 
 use base 'P9::AA::Check::Mount';
 
+use constant PROC_MOUNTS => '/proc/mounts';
+
 =head1 NAME
 
 Linux implementation of L<P9::AA::Check::Mount> checking module
@@ -15,35 +17,21 @@ Linux implementation of L<P9::AA::Check::Mount> checking module
 
 sub getFstabData {
 	my ($self) = @_;
-	my $file = '/etc/fstab';
-	my $fd = IO::File->new($file, 'r');
-	unless (defined $fd) {
-		$self->error("Unable to open file $file for reading: $!");
-		return undef;
-	}
-	
-	my $r = [];
-	while (<$fd>) {
-		$_ =~ s/^\s+//g;
-		$_ =~ s/\s+$//g;
-		next if ($_ =~ m/^#/);
-		next unless (length($_) > 0);
-		my ($dev, $mntpoint, $type, $opt) = split(/\s+/, $_);
-		next unless (defined $dev && defined $mntpoint);
-		next if ($mntpoint eq 'swap');
-		next if ($opt =~ m/noauto/);
-		push(@{$r}, [ $dev, $mntpoint ]);
-	}
-
-	return $r;
+	return $self->_parseFstab('/etc/fstab');
 }
 
 sub getMountData {
 	my ($self) = @_;
-	my $cmd = $self->getMountCmd();
-	return undef unless (defined $cmd);
 	
-	# run command
+	# is /proc available?
+	#if (-f PROC_MOUNTS && -r PROC_MOUNTS) {
+	#	$self->bufApp("Using proc(5) interface [" . PROC_MOUNTS . "].");
+	#	return $self->_parseFstab(PROC_MOUNTS);
+	#}
+
+	# nope, we should run mount command...
+	my $cmd = $self->getMountCmd();
+	return undef unless (defined $cmd);	
 	my ($buf, $exit_status) = $self->qx2($cmd);
 	return $self->parseMountData($buf);
 }
@@ -70,6 +58,34 @@ sub parseMountData {
 			my $mntpoint = $2;
 			push(@{$r}, [ $dev, $mntpoint ]);
 		}
+	}
+
+	return $r;
+}
+
+sub _parseFstab {
+	my ($self, $file) = @_;
+	if ($self->{debug}) {
+		$self->bufApp("Parsing fstab file: $file");
+	}
+	my $fd = IO::File->new($file, 'r');
+	unless (defined $fd) {
+		$self->error("Unable to open file $file for reading: $!");
+		return undef;
+	}
+	
+	my $r = [];
+	while (<$fd>) {
+		$_ =~ s/^\s+//g;
+		$_ =~ s/\s+$//g;
+		next if ($_ =~ m/^#/);
+		next unless (length($_) > 0);
+		my ($dev, $mntpoint, $type, $opt) = split(/\s+/, $_);
+		next unless (defined $dev && defined $mntpoint);
+		next if ($mntpoint eq 'swap');
+		next if ($dev eq 'devpts');
+		next if ($opt =~ m/noauto/);
+		push(@{$r}, [ $dev, $mntpoint ]);
 	}
 
 	return $r;

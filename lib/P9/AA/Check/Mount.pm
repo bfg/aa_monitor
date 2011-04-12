@@ -12,7 +12,11 @@ our $VERSION = 0.10;
 
 =head1 NAME
 
-EXAMPLE checking module. See source for details.
+Mounted filesystems checking module.
+
+=head1 METHODS
+
+This module inherits all methods from L<P9::AA::Check> module.
 
 =cut
 sub clearParams {
@@ -48,12 +52,15 @@ sub check {
 	return CHECK_ERR unless (defined $mounts);
 	if ($self->{debug}) {
 		$self->bufApp("--- BEGIN MOUNT DATA ---");
-		$self->bufApp($self->dumpVar($fstab));
+		$self->bufApp($self->dumpVar($mounts));
 		$self->bufApp("--- END MOUNT DATA ---");
 	}
 	
 	my $res = CHECK_OK;
 	my $err = '';
+	
+	my $fmt = "%-50.50s%-50.50s%s\n";
+	$self->bufApp(sprintf($fmt, "DEVICE", "MNTPOINT", "STATUS"));
 	
 	# check structures...
 	foreach my $e (@{$fstab}) {
@@ -71,7 +78,8 @@ sub check {
 			my $m_mntpoint = $m->[1];
 			my $real_m_dev = abs_path($m_dev);
 			my $real_m_mntpoint = abs_path($m_mntpoint);
-			
+
+			no warnings;
 			if (
 			($dev eq $m_dev || $dev eq $real_m_dev || $real_dev eq $m_dev || $real_dev eq $real_m_dev) &&
 			($mntpoint eq $m_mntpoint || $mntpoint eq $real_m_mntpoint || $real_mntpoint eq $m_mntpoint || $real_mntpoint eq $real_m_mntpoint)
@@ -80,8 +88,11 @@ sub check {
 				last;
 			}
 		}
-
-		unless ($ok) {
+		
+		if ($ok) {
+			$self->bufApp(sprintf($fmt, $dev, $mntpoint, "OK"));
+		} else {
+			$self->bufApp(sprintf($fmt, $dev, $mntpoint, "NOT MOUNTED"));
 			$err .= "Device $dev is not mounted on $mntpoint\n";
 			$res = CHECK_ERR;
 		}
@@ -94,22 +105,90 @@ sub check {
 	return $res;
 }
 
+=head2 getFstabData
+
+ my $fstab = $self->getFstabData();
+
+Returns arrayref containing fstab data on success, otherwise undef. 
+
+Example structure:
+
+ [
+  [
+    '/dev/md2',
+    '/'
+  ],
+  [
+    '/dev/md0',
+    '/boot'
+  ]
+ ]
+
+=cut
 sub getFstabData {
 	my $self = shift;
 	$self->error("Method getFstabData is not implemented on " . $self->getOs() . " OS.");
 	return undef;
 }
 
+=head2 getMountCmd
+
+ my $cmd = $self->getMountCmd();
+
+Returns L<mount(8)> command name on success, otherwise undef.
+
+=cut
 sub getMountCmd {
 	return 'mount';
 }
 
+=head2 getMountData
+
+ my $mounted = $self->getMountData();
+
+Returns arrayref containing info about currently mounted filesystems.
+
+Example structure:
+
+ [
+  [
+    '/dev/md2',
+    '/'
+  ],
+  [
+    '/dev/md0',
+    '/boot'
+  ]
+ ]
+
+=cut
 sub getMountData {
 	my $self = shift;
 	$self->error("Method getMoundData is not implemented on " . $self->getOs() . " OS.");
 	return undef;
 }
 
+=head2 parseMountData
+
+ my $mounted = $self->parseMountData($raw_data);
+
+Parses raw data returned from L<mount(8)> command and returns arrayref on success,
+otherwise undef.
+
+Example structure:
+
+ [
+  [
+    '/dev/md2',
+    '/'
+  ],
+  [
+    '/dev/md0',
+    '/boot'
+  ]
+ ]
+
+=cut
 sub parseMountData {
 	my $self = shift;
 	$self->error("Method parseMountData is not implemented on " . $self->getOs() . " OS.");

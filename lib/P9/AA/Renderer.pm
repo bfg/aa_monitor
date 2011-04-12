@@ -94,6 +94,22 @@ sub setHeader {
 	return 1;	
 }
 
+=head2 uri
+
+ $renderer->uri($uri);			# set URI object
+ my $uri = $renderer->uri();	# get URI object
+
+=cut
+sub uri {
+	my $self = shift;
+	if (@_) {
+		my $uri = shift;
+		return undef unless (blessed($uri) && $uri->isa('URI'));
+		$self->{_uri} = $uri;
+	}
+	return $self->{_uri};
+}
+
 =head1 SEE ALSO
 
 L<P9::AA::CheckHarness>, 

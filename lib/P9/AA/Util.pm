@@ -5,8 +5,9 @@ use warnings;
 
 use Data::Dumper;
 use Text::ParseWords;
+use Scalar::Util qw(blessed);
 
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 
 my $_obj = undef;
 
@@ -253,6 +254,47 @@ Returns new random id as 8 character string.
 
 sub newId {
 	return sprintf("%x", int(rand(0xFFFFFFFF)));
+}
+
+=head2 getBaseUrl
+
+ my $base_url = $u->getBaseUrl($uri_object);
+
+Returns aa_monitor base URL (string) from provided L<URI> object.
+
+=cut
+sub getBaseUrl {
+	my ($self, $uri) = @_;
+	return '/' unless (blessed($uri) && $uri->isa('URI'));
+	
+	my $u = '';
+	if ($uri->can('host_port')) {
+		my $scheme = $uri->scheme();
+		$u = $scheme || 'http';
+		$u .= '://';
+		$u .= $uri->host();
+		my $p = $uri->port();
+		if (defined $scheme && $scheme eq 'https') {
+			$u .= ":$p" unless ($p == 443);
+		} else {
+			$u .= ":$p" unless ($p == 80);
+		}
+	}
+	
+	# add path...
+	my $path = $uri->path();
+
+	# strip documentation info
+	$path =~ s/\/doc\/*.*//g;
+	
+	my @path = split(/\/+/, $path);
+	
+	# add path
+	#$path .= '/' unless (length $path);
+	$u .= $path;
+	#print STDERR "base url from uri '$uri' => '$u'\n";
+	
+	return $u;
 }
 
 sub _error {

@@ -6,6 +6,7 @@ use warnings;
 use HTML::Entities;
 use POSIX qw(strftime);
 
+use P9::AA::Config;
 use P9::AA::Util;
 use P9::AA::Constants qw(:all);
 use base 'P9::AA::Renderer';
@@ -270,7 +271,7 @@ a:hover, a:focus {text-decoration: underline; color: red;}
 <body>
 	<div id="wrapper">
 		<!--div id="header" align="center"-->
-			<h3><center>$h_name $h_to_str / $h_version</center></h3>
+		<h3><center>$h_name $h_to_str / $h_version</center></h3>
 	<!--/div-->
 
 	<div class="wrapper">
@@ -482,8 +483,7 @@ EOF
 }
 
 sub renderGeneralInfo {
-	my ($self, $data) = @_;
-	
+	my ($self, $data) = @_;	
 	my $sw =
 			encode_entities($data->{data}->{environment}->{program_name}) .
 			"/" .
@@ -493,7 +493,26 @@ sub renderGeneralInfo {
 	my $buf = <<EOF
 <!-- BEGIN GENERAL INFO -->
 	<div class="page-header"><h4></h4></div>
-	<div class="foot"><center>$sw at $host</center></div>
+EOF
+;;
+
+	# add documentation POD hyperlinks?
+	my $cfg = P9::AA::Config->new();
+	if ($cfg->get('enable_doc') && $self->uri()) {
+		my $u = P9::AA::Util->new();
+		my $base_url = $u->getBaseUrl($self->uri());
+		$base_url = '' if ($base_url eq '/');
+		my $module = $data->{data}->{module}->{name};
+
+		$buf .= '<div class="foot"><center>';
+		$buf .= "[<a href='$base_url/doc/P9/README_AA'>readme</a>] " if (defined $base_url);
+		$buf .= "[<a href='$base_url/doc/P9/AA/Check/$module'>module doc</a>] ";
+		$buf .= "[<a href='$base_url/doc/P9/AA/CHANGELOG'>changelog</a>] " if (defined $base_url);
+		$buf .= "</center></div>\n";
+	}
+
+	$buf .= <<EOF
+	<div class="foot"><center><a href='https://github.com/bfg/aa_monitor/wiki'>$sw</a> at $host</center></div>
 <!-- END GENERAL INFO -->
 
 EOF

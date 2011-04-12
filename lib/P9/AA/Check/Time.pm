@@ -82,6 +82,12 @@ sub check {
 	return CHECK_OK;
 }
 
+sub toString {
+	my $self = shift;
+	my $str = $self->{ntp_hosts};
+	return $str;
+}
+
 sub _checkNTPServer {
 	my ($self, $host, $port) = @_;
 	my $result = 1;

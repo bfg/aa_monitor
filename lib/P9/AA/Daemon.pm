@@ -12,7 +12,7 @@ use base 'P9::AA::Base';
 
 use constant MAX_CLIENTS => 50;
 
-our $VERSION = 0.40;
+our $VERSION = 0.41;
 
 my $_ipv6_available = undef;
 
@@ -29,11 +29,14 @@ sub new {
 	##################################################
 	#              PRIVATE VARS                      #
 	##################################################
+	my $cfg = P9::AA::Config->new();
 	$self->{_clients} = {};
 	$self->{_daemonized} = 0;
 	$self->{_chroot} = 0;
 	$self->{_listeners} = [];
-	$self->{_max_clients} = MAX_CLIENTS;
+	my $max_clients = $cfg->get('max_clients');
+	$max_clients = MAX_CLIENTS unless (defined $max_clients && $max_clients >= 0);
+	$self->{_max_clients} = $max_clients;
 	$self->{_conn_class} = undef;
 
 	bless($self, $class);
@@ -64,7 +67,7 @@ sub num_clients {
 sub max_clients {
 	my ($self, $num) = @_;
 	no warnings;
-	if (defined $num && $num > 0) {
+	if (defined $num && $num >= 0) {
 		$self->{_max_clients} = $num;
 	}
 	return $self->{_max_clients};

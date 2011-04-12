@@ -4,6 +4,20 @@ aa_monitor changelog
 
 =head1 VERSIONS
 
+=head2 1.0.5
+
+=over
+
+=item * new module: L<B<Mount>|P9::AA::Check::Mount> - check if all filesystems are mounted
+
+=item * module L<B<FSUsage>|P9::AA::Check::FSUsage> - device names are not unique, code refactoring
+
+=item * Daemon: really respect max_clients = 0
+
+=item * HTML output renderer: Added readme, changelog and module POD hyperlinks to HTML output if enable_doc == true
+
+=back
+
 =head2 1.0.4
 
 =over

@@ -16,6 +16,8 @@ aa_monitor changelog
 
 =item * HTML output renderer: Added readme, changelog and module POD hyperlinks to HTML output if enable_doc == true
 
+=item * modules L<B<Time>|P9::AA::Check::Time>, L<B<Process>|P9::AA::Check::Process>: added toString() check description method.
+
 =back
 
 =head2 1.0.4

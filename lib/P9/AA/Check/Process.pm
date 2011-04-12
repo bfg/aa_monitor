@@ -116,6 +116,13 @@ sub check {
 	return CHECK_OK;
 }
 
+sub toString {
+	my $self = shift;
+	my $str = $self->{cmd};
+	$str .= " basename" if ($self->{use_basename});
+	return $str;
+}
+
 =head2 getProcessListCmd
 
 Returns command (as string) that should be executed on current OS to get list of B<all>

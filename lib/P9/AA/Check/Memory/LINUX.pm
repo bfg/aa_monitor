@@ -7,6 +7,11 @@ use base 'P9::AA::Check::Memory';
 
 our $VERSION = 0.14;
 
+=head1 NAME
+
+Linux implementation of L<P9::AA::Check::Memory> module.
+
+=cut
 sub getMemoryUsageCmd {
 	return 'free -m';
 }
@@ -127,5 +132,11 @@ sub parseSwapUsage {
 	
 	return $res;
 }
+
+=head1 AUTHOR
+
+Brane F. Gracnar
+
+=cut
 
 1;

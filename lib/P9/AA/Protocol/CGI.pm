@@ -12,6 +12,7 @@ package P9::AA::Protocol::CGI;
 use strict;
 use warnings;
 
+use URI;
 use CGI qw(:standard);
 use Time::HiRes qw(time);
 use Scalar::Util qw(blessed);
@@ -48,6 +49,7 @@ sub process {
 
 	my $path = $cgi->path_info();
 	$path = $self->urldecode($path) if (defined $path);
+	my $uri = $self->_getUri($cgi);
 	if (defined $path && length($path)) {
 		# /favicon.ico?
 		if ($path =~ m/^\/+favicon\.ico/i) {
@@ -56,13 +58,13 @@ sub process {
 			return 1;
 		}
 		# /doc => documentation?
-		if ($cfg->get('enable_doc') && $path =~ m/(.*)\/+doc\/?(.*)/) {
-			my $prefix = $1;
-			my $what = $2;
+		if ($cfg->get('enable_doc') && $path =~ m/.*\/+doc\/?(.*)/) {
+			my $what = $1;
 			$what = 'P9/README_AA' unless (defined $what && length($what));
 			$what =~ s/\/+/::/g;
 			$log->debug("Will render documentation: $what");
-			my $body = $self->renderDoc($what, $prefix);
+			my $base_url = $self->getBaseUrl($uri);
+			my $body = $self->renderDoc($what, $base_url);
 			unless (defined $body && length $body) {
 				$self->badResponse($stdout, 404);
 				return 1;
@@ -124,6 +126,9 @@ sub process {
 		);
 	}
 	
+	# assign uri...
+	$renderer->uri($uri);
+	
 	# render the data
 	my $body = $renderer->render($data, $headers);
 	unless (defined $body) {
@@ -174,6 +179,30 @@ sub _cgiHeaders {
 		'-Cache-Control' => 'no-cache, max-age=0',
 		-type => 'text/plain',
 	};
+}
+
+sub _getUri {
+	my ($self, $cgi) = @_;
+	my $host = $cgi->virtual_host() || $cgi->server_name();
+	my $port = $cgi->virtual_port() || $cgi->server_port();
+	# is there a better way to get request_uri?
+	my $path = $ENV{REQUEST_URI};
+	my $qs = $cgi->query_string();
+	my $ssl = $cgi->https() ? 1 : 0;
+
+	my $url = ($ssl) ? 'https' : 'http';
+	$url .= "://";
+	$url .= $host;
+	if ($ssl) {
+		$url .= ":$port" unless ($port == 443);
+	} else {
+		$url .= ":$port" unless ($port == 80);
+	}
+	$url .= (defined $path) ? $path : '/';
+	$url .= "?" . $qs if (defined $qs && length $qs);
+	
+	# create and return URI object...
+	return URI->new($url);
 }
 
 1;

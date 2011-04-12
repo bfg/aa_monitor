@@ -141,6 +141,7 @@ sub process {
 	}
 	
 	# render the data
+	$renderer->uri($req->uri());
 	my $body = $renderer->render($data, $resp);
 	unless (defined $body) {
 		$self->error($renderer->error());

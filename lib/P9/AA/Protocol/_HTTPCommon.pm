@@ -9,6 +9,7 @@ use URI::QueryParam;
 use HTTP::Status;
 use Scalar::Util qw(blessed);
 
+use P9::AA::Util;
 use P9::AA::CheckHarness;
 use base 'P9::AA::Protocol';
 
@@ -453,6 +454,12 @@ sub renderDoc {
 	no warnings;
 	local $HtmlRend::PREFIX = $prefix;
 	return P9::AA::PodRenderer->new()->render($pkg);
+}
+
+sub getBaseUrl {
+	my $self = shift;
+	my $u = P9::AA::Util->new();
+	return $u->getBaseUrl(@_);
 }
 
 sub _getRequestMethod {

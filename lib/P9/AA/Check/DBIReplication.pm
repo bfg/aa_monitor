@@ -8,7 +8,7 @@ use Time::HiRes qw(sleep);
 use P9::AA::Constants;
 use base 'P9::AA::Check::DBI';
 
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 
 =head1 NAME
 
@@ -135,6 +135,10 @@ sub check {
 
 	outta_check:
 	
+	# destroy statements
+	undef $ins_st;
+	undef $sel_st;
+	
 	# drop table on referential node.
 	$self->dbiQuery($db_ref, 'DROP TABLE ' . $table_name);
 	$self->dbiQuery($db_cmp, 'DROP TABLE ' . $table_name) unless ($result == CHECK_OK);
@@ -153,7 +157,7 @@ sub _getTableName {
 sub _createTableSQL {
 	my ($self, $table) = @_;
 	$table = $self->_getTableName() unless (defined $table && length($table));
-	return 'CREATE TABLE ' . $table . '(a VARCHAR(100))';
+	return 'CREATE TABLE ' . $table . ' (a VARCHAR(100))';
 }
 
 

@@ -4,11 +4,12 @@ use strict;
 use warnings;
 
 use DBI;
+use Scalar::Util qw(refaddr);
 
 use P9::AA::Constants;
 use base 'P9::AA::Check';
 
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 
 =head1 NAME
 
@@ -102,6 +103,9 @@ Connects to database. Returns initialized database handle object on success, oth
 sub dbiConnect {
 	my ($self, $dsn, $user, $pass, $opt) = @_;
 	
+	# \; => ;
+	$dsn =~ s/\\;/;/g;
+
 	unless (defined $opt && ref($opt) eq 'HASH') {
 		$opt = {
 			RaiseError => 0,
@@ -110,11 +114,14 @@ sub dbiConnect {
 	}
 	
 	# connect
+	$self->bufApp("Connecting to DSN '$dsn' using username '$user'.") if ($self->{debug});
 	my $dbh = DBI->connect($dsn, $user, $pass, $opt);
 	unless (defined $dbh) {
 		$self->error("Unable to connect to DSN '$dsn': " . DBI->errstr());
 		return undef;
 	}
+	my $id = refaddr($dbh);
+	$self->bufApp("  Successfully created connection id $id") if ($self->{debug});
 	
 	return $dbh;
 }
@@ -139,18 +146,21 @@ sub dbiQuery {
 	my $db = shift;
 	my $sql = shift;
 	
+	my $db_id = refaddr($db);
+	
 	# prepare statement...
-	$self->bufApp("Preparing SQL: $sql") if ($self->{debug});
+	$self->bufApp("[$db_id] Preparing SQL: $sql") if ($self->{debug});
 	my $st = $db->prepare($sql);
 	unless (defined $st) {
-		$self->error("Error preparing SQL: " . $db->errstr());
+		$self->error("Error preparing SQL on connection $db_id: " . $db->errstr());
 		return undef;
 	}
 	
 	# now try to execute the query...
+	$self->bufApp("  Executing SQL with bound values: ", join(", ", @_)) if ($self->{debug});
 	my $r = $st->execute(@_);
 	unless (defined $r) {
-		$self->error("Error executing SQL: " . $db->errstr());
+		$self->error("Error executing SQL on connection $db_id: " . $db->errstr());
 		return undef;
 	}
 	

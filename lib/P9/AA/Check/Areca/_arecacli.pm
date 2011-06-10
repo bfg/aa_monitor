@@ -77,7 +77,6 @@ sub getRAIDSetData {
 	return $self->_parseRAIDSetData($data);
 }
 
-
 sub VERSION {
 	return $VERSION;
 }
@@ -109,7 +108,6 @@ sub _runCommand {
 		map { 
 			$self->_debug(join("\n", $_));
 		} @$out;
-		#$self->_debug(join("\n", @$out));
 		$self->_debug("######################################## [END COMMAND OUTPUT] ########################################");
 		$self->_debug("Command '$cmd' exited with return value '$retval'");
 	}
@@ -123,17 +121,13 @@ sub _debug {
 	}
 }
 
-sub _getDefaultAdapter {
-	my ($self, $adapter) = @_;
-	$adapter = 1 if (!defined $adapter);
-	return $adapter;
-}
-
 sub _setCurrentAdapter {
 	my ($self, $adapter) = @_;
 
+	# set default adapter (1)
+	$adapter = (defined $adapter) ? $adapter : 1;
+
 	# run the Areca cli
-	$adapter = $self->_getDefaultAdapter($adapter);
 	my $run = RAID_CMD . " 'set curctrl=$adapter'";
 	my ($out, $exit_code) = $self->_runCommand($run);
 
@@ -170,7 +164,7 @@ sub _parseRAIDSetData {
 			$line =~ m/^GuiErrMsg/
 		);
 	
-		# make up an empty RAIDSet hash	
+		# make up an empty RAIDSetData hash	
 		my $rs = {
 			"Id"			=> undef,
 			"Name"			=> undef,
@@ -216,7 +210,7 @@ sub _parseVolumeSetData {
 			$line =~ m/^GuiErrMsg/
 		);
 	
-		# make up an empty RAIDSet hash	
+		# make up an empty VolumeSetData hash	
 		my $vs = {
 			"Id"			=> undef,
 			"Name"			=> undef,
@@ -262,7 +256,7 @@ sub _parseDiskData {
 			$line =~ m/^GuiErrMsg/
 		);
 	
-		# make up an empty RAIDSet hash	
+		# make up an empty DiskData hash	
 		my $d = {
 			"Id"			=> undef,
 			"Ch#"			=> undef,
@@ -287,9 +281,47 @@ sub _parseDiskData {
 	return $dd;
 }
 
+sub _parseAdapterData {
+	my ($self, $data) = @_;
+	
+	unless (defined $data) {
+		$self->error("No data given.");
+		return undef;
+	}
 
-
-
+	# make up an empty AdapterData hash	
+	my $ad = {
+		"Main Processor"		=> undef,
+		"CPU ICache Size"		=> undef,
+		"CPU DCache Size"		=> undef,
+		"CPU SCache Size"		=> undef,
+		"System Memory"			=> undef,
+		"Firmware Version"		=> undef,
+		"BOOT ROM Version"		=> undef,
+		"Serial Number"			=> undef,
+		"Controller Name"		=> undef,
+		"Current IP Address"	=> undef,
+	};
+		
+	foreach my $line (@$data) {
+		# skip the junk
+		next if (
+			$line =~ m/^=/ or
+			$line =~ m/^\s+#/ or
+			$line =~ m/^GuiErrMsg/
+		);
+	
+		# parse the line
+		if ($line =~ m/^\s*(.*):\s*(.*)$/) {
+			my $name = $1;
+			my $value = $2;
+			$name =~ s/\s+$//g;
+			$value =~ s/\s+$//g;
+			$ad->{"$name"} = $value;
+		};
+	}
+	return $ad;
+}
 
 =head1 SEE ALSO
 

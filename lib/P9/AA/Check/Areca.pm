@@ -89,9 +89,10 @@ sub clearParams {
 sub check {
 	my ($self) = @_;
 
-	$self->bufApp(Dumper $self->getRAIDSetData($self->{adapter}));
-	$self->bufApp(Dumper $self->getVolumeSetData($self->{adapter}));
-	$self->bufApp(Dumper $self->getDiskData($self->{adapter}));
+	$self->bufApp(Dumper $self->getAdapterData($self->{adapter}));
+	#$self->bufApp(Dumper $self->getRAIDSetData($self->{adapter}));
+	#$self->bufApp(Dumper $self->getVolumeSetData($self->{adapter}));
+	#$self->bufApp(Dumper $self->getDiskData($self->{adapter}));
 	
 	return 1;
 	#$self->getVolumeSetData($self->{adapter});

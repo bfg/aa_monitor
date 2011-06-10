@@ -1,4 +1,4 @@
-package P9::AA::Check::Areca::SUNOS;
+package P9::AA::Check::Areca::FREEBSD;
 
 use strict;
 use warnings;
@@ -10,7 +10,7 @@ use base 'P9::AA::Check::Areca::_arecacli';
 
 =head1 NAME
 
-Solaris implementation of L<P9::AA::Check::Areca::_arecacli> module.
+FreeBSD implementation of L<P9::AA::Check::Areca::_megacli> module.
 
 =head1 DESCRIPTION
 

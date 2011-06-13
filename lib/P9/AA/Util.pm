@@ -7,7 +7,7 @@ use Data::Dumper;
 use Text::ParseWords;
 use Scalar::Util qw(blessed);
 
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 
 my $_obj = undef;
 
@@ -110,12 +110,13 @@ sub qx {
 
 "Improved" version of L<qx> method. Takes command string, resolves
 words using B<shellwords> function in L<Text::ParseWords>, tries to resolve full program name
-using L<which> method and invokes command capturing it's stdout
-without involving shell (/bin/sh -c).
+using L<which> method and invokes command capturing it's stdout.
 
 For return values see L<qx> method.
 
 B<WARNING:> STDERR output is lost and stream redirection doesn't work.
+
+B<WARNING:> qx2() doesn't work with command argument containing shell quotes. Use L</qx> instead.
  
  # this is shorter way of...
  my ($output, $exit_code) = $self->qx2('ls /tmp');

@@ -10,9 +10,12 @@ aa_monitor changelog
 
 =item * modules L<B<DBI>|P9::AA::Check::DBI>, L<B<DBIReplication>|P9::AA::Check::DBIReplication>; minor Icinga/Nagios related fixes (replace \; with ; in DSN specification).
 
-=item * module L<B<DBIReplication>|P9::AA::Check::DBIReplication>: new parameter: B<table_name> - ability specify replication table name
+=item * module L<B<DBIReplication>|P9::AA::Check::DBIReplication>: new parameters: B<table_name> - ability specify replication table name;
+B<two_way> - two-way replication check
 
 =item * module L<B<URL>|P9::AA::Check::URL>: new parameter: B<redirects> - maximum number of allowed redirects
+
+=item * module: L<B<Mount>|P9::AA::Check::Mount> - implemented LABEL/UUID support on Linux platform
 
 =item * helper module L<B<_Socket>|P9::AA::Check::_Socket>: Implemented L<IO::Socket::SSL> version <= 1.44 warning
 

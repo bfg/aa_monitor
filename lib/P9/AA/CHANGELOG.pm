@@ -4,6 +4,22 @@ aa_monitor changelog
 
 =head1 VERSIONS
 
+=head2 1.0.6
+
+=over
+
+=item * modules L<B<DBI>|P9::AA::Check::DBI>, L<B<DBIReplication>|P9::AA::Check::DBIReplication>; minor Icinga/Nagios related fixes (replace \; with ; in DSN specification).
+
+=item * module L<B<DBIReplication>|P9::AA::Check::DBIReplication>: new parameter: B<table_name> - ability specify replication table name
+
+=item * module L<B<URL>|P9::AA::Check::URL>: new parameter: B<redirects> - maximum number of allowed redirects
+
+=item * helper module L<B<_Socket>|P9::AA::Check::_Socket>: Implemented L<IO::Socket::SSL> version <= 1.44 warning
+
+=item * HTML output renderer: display general L<B<Check>|P9::AA::Check> module doc if module was not specified.
+
+=back
+
 =head2 1.0.5
 
 =over

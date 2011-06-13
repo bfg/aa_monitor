@@ -214,6 +214,11 @@ sub validator_lcstr {
 	};
 }
 
+=head2 validator_str_trim
+
+Same as validate_str except that result is always trimmed.
+
+=cut
 sub validator_str_trim {
 	my $validator = validator_str(@_);
 	return sub {
@@ -226,6 +231,11 @@ sub validator_str_trim {
 	};
 }
 
+=head2 validator_str_ltrim
+
+Same as validate_str except that result is always trimmed at the beginning of the string.
+
+=cut
 sub validator_str_ltrim {
 	my $validator = validator_str(@_);
 	return sub {
@@ -237,6 +247,11 @@ sub validator_str_ltrim {
 	};
 }
 
+=head2 validator_str_rtrim
+
+Same as validate_str except that result is always trimmed on the end of string.
+
+=cut
 sub validator_str_rtrim {
 	my $validator = validator_str(@_);
 	return sub {
@@ -248,6 +263,11 @@ sub validator_str_rtrim {
 	};
 }
 
+=head2 validator_list
+
+Validates array reference argument.
+
+=cut
 sub validator_list {
 	my ($default) = @_;
 	$default = [] unless (defined $default && ref($default) eq 'ARRAY');
@@ -260,6 +280,11 @@ sub validator_list {
 	};
 }
 
+=head2 validator_hash
+
+Validates hash reference argument.
+
+=cut
 sub validator_hash {
 	my ($default) = @_;
 	$default = {} unless (defined $default && ref($default) eq 'HASH');

@@ -13,7 +13,7 @@ use Scalar::Util qw(blessed);
 use P9::AA::Constants;
 use base 'P9::AA::Check::_Socket';
 
-our $VERSION = 0.16;
+our $VERSION = 0.17;
 
 =head1 NAME
 
@@ -36,6 +36,12 @@ sub clearParams {
 		'http://localhost/',
 		'Full URL address.',
 		$self->validate_str(16 * 1024),
+	);
+	$self->cfgParamAdd(
+		'redirects',
+		0,
+		'Maximum number of allowed redirects.',
+		$self->validate_int(0, 10),
 	);
 	$self->cfgParamAdd(
 		qr/^header[\w\-]+/,
@@ -200,9 +206,7 @@ sub getUa {
 		$self->patchSocketImpl();
 	}
 	
-	my $lwp = LWP::UserAgent->new(
-		timeout => $timeout
-	);
+	my $lwp = LWP::UserAgent->new(timeout => $timeout);
 	
 	# proxy, anyone?
 	$proxy_url = $self->{proxy_url} unless (defined $proxy_url && length($proxy_url));
@@ -213,6 +217,11 @@ sub getUa {
 			[ 'http', 'https', 'ftp' ],
 			$proxy_url
 		);
+	}
+	
+	# set max max redirects?
+	if ($self->{redirects} >= 0) {
+		$lwp->max_redirect($self->{redirects});
 	}
 
 	return $lwp;
@@ -328,6 +337,12 @@ sub httpRequest {
 	unless (blessed($ua) && $ua->isa('LWP::UserAgent')) {
 		$ua = $self->getUa();
 		return undef unless (defined $ua);
+	}
+	
+	# HTTPS url? Check for availability of IO::Socket::SSL module
+	my $url = $req->uri();
+	if (defined $url && $url =~ m/^https:\/\//) {
+		return undef unless ($self->hasSSL());
 	}
 
 	if ($self->{debug}) {

@@ -82,9 +82,21 @@ sub _parseFstab {
 		next unless (length($_) > 0);
 		my ($dev, $mntpoint, $type, $opt) = split(/\s+/, $_);
 		next unless (defined $dev && defined $mntpoint);
-		next if ($mntpoint eq 'swap');
+		next if ($mntpoint eq 'swap' || $mntpoint eq 'none');
 		next if ($dev eq 'devpts');
 		next if ($opt =~ m/noauto/);
+		
+		# LABEL/UUID support...
+		if ($dev =~ m/^((UUID|LABEL)=[^\s]+)$/i) {
+			my $real_dev = $self->qx2("findfs $dev")->[0];
+			if (defined $real_dev && length $real_dev > 0) {
+				$real_dev =~ s/\s+$//g;
+				$self->log_debug("LABEL/UUID '$dev' resolved to '$real_dev'.");
+				# rename "dev"
+				$dev = $real_dev;
+			}
+		}
+		
 		push(@{$r}, [ $dev, $mntpoint ]);
 	}
 

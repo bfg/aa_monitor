@@ -506,7 +506,11 @@ EOF
 
 		$buf .= '<div class="foot"><center>';
 		$buf .= "[<a href='$base_url/doc/P9/README_AA'>readme</a>] " if (defined $base_url);
-		$buf .= "[<a href='$base_url/doc/P9/AA/Check/$module'>module doc</a>] ";
+		if (defined $module && length $module > 0) {
+			$buf .= "[<a href='$base_url/doc/P9/AA/Check/$module'>module doc</a>] ";
+		} else {
+			$buf .= "[<a href='$base_url/doc/P9/AA/Check'>module doc</a>] ";
+		}
 		$buf .= "[<a href='$base_url/doc/P9/AA/CHANGELOG'>changelog</a>] " if (defined $base_url);
 		$buf .= "</center></div>\n";
 	}

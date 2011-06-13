@@ -10,10 +10,11 @@ use File::Basename;
 
 # determine libdir and put it into @INC
 use lib (
-	'/usr/lib/aa_monitor',
-	'/usr/local/lib/aa_monitor',
 	abs_path($FindBin::RealBin .  "/../" . "lib"),
 	abs_path($FindBin::RealBin .  "/../" . "ext"),
+	'/usr/lib/aa_monitor',
+	'/usr/local/lib/aa_monitor',
+	
 );
 
 use P9::AA::Log;

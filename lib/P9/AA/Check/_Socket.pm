@@ -14,7 +14,7 @@ use constant CLASS_GLUE => 'Net::INET6Glue';
 
 use base 'P9::AA::Check';
 
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 
 my $_has_ipv6 = undef;
 my $_has_ssl = undef;
@@ -98,6 +98,17 @@ sub hasSSL {
 	
 	if (! $_has_ssl) {
 		$self->error("SSL support is not available; missing " . CLASS_SSL . " module.");
+	} else {
+		# check for outdated io::socket::ssl
+		unless ($self->{_warn_ssl}) {
+			my $ver = IO::Socket::SSL->VERSION();
+			no warnings;
+			my $num_ver = $ver + 0 ;
+			if ($ver >= 0 && $ver < 1.44) {
+				$self->bufApp("WARNING: Obsolete IO::Socket::SSL module version $ver; please upgrade to at least 1.44");
+			}
+		}
+		$self->{_warn_ssl} = 1;
 	}
 
 	return $_has_ssl;

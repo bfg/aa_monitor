@@ -20,7 +20,7 @@ use P9::AA::ParamValidator;
 
 use base 'P9::AA::Base';
 
-our $VERSION = 0.20;
+our $VERSION = 0.21;
 
 my $u = P9::AA::Util->new();
 
@@ -932,6 +932,16 @@ See L<P9::AA::ParamValidator> for instructions.
 sub validate_lcstr {
 	shift;
 	P9::AA::ParamValidator::validator_lcstr(@_);
+}
+
+=head2 validate_str_trim
+
+See L<P9::AA::ParamValidator/validator_str_trim> for instructions.
+
+=cut
+sub validate_str_trim {
+	shift;
+	P9::AA::ParamValidator::validator_str_trim(@_);
 }
 
 =head2 validate_regex

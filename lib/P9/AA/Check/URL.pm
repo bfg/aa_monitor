@@ -379,13 +379,16 @@ otherwise undef.
 
 =cut
 sub httpGet {
-	my $self = shift;
-	my $url = shift;
+	my ($self, $url, %opt) = @_;
 	
-	my $ua = $self->getUa();
-	return undef unless (defined $ua);
+	# create request...
+	my $req = $self->prepareRequest(
+		%opt,
+		url => $url,
+		request_method => 'GET',
+	);
 	
-	return $ua->get($url, @_);
+	return $self->httpRequest($req);
 }
 
 sub _getRequestOpt {
@@ -403,7 +406,7 @@ sub _getRequestOpt {
 	
 	# custom headers
 	foreach (keys %{$self}, %opt) {
-		next unless ($_ =~ m/^header.+/);
+		next unless (defined $_ && $_ =~ m/^header.+/);
 		$r->{$_} = $self->{$_};
 		$r->{$_} = $opt{$_} if (exists($opt{$_}));		
 	}

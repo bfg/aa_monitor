@@ -17,6 +17,10 @@ B<two_way> - two-way replication check
 
 =item * module: L<B<Mount>|P9::AA::Check::Mount> - implemented LABEL/UUID support on Linux platform
 
+=item * new module L<B<ApacheSolr>|P9::AA::Check::ApacheSolr> - checks your L<Apache Solr|http://lucene.apache.org/solr> server :)
+
+=item * new B<experimental> module L<B<StackedCheck>|P9::AA::Check::StackedCheck> - performs complex checks embeding other check modules.
+
 =item * helper module L<B<_Socket>|P9::AA::Check::_Socket>: Implemented L<IO::Socket::SSL> version <= 1.44 warning
 
 =item * HTML output renderer: display general L<B<Check>|P9::AA::Check> module doc if module was not specified.

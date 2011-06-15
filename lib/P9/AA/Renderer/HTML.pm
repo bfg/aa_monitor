@@ -370,9 +370,9 @@ EOF
 		my $id = $u->newId();
 		
 		my $hkey = encode_entities($key);
-		my $hval = (defined $c->{value}) ? encode_entities($c->{value}) : '';
-		my $hdef = (defined $c->{default}) ? encode_entities($c->{default}) : '';
-		my $hdesc = (defined $c->{description}) ? encode_entities($c->{description}) : '';
+		my $hval = encode_entities($self->renderValTxt($c->{value}));
+		my $hdef = encode_entities($self->renderValTxt($c->{default}));
+		my $hdesc = encode_entities($self->renderValTxt($c->{description}));
 		
 		my $len = length($key);
 		my $fill = 30 - $len;
@@ -502,7 +502,7 @@ EOF
 		my $u = P9::AA::Util->new();
 		my $base_url = $u->getBaseUrl($self->uri());
 		$base_url = '' if ($base_url eq '/');
-		my $module = $data->{data}->{module}->{name};
+		my $module = $self->renderValTxt($data->{data}->{module}->{name});
 
 		$buf .= '<div class="foot"><center>';
 		$buf .= "[<a href='$base_url/doc/P9/README_AA'>readme</a>] " if (defined $base_url);

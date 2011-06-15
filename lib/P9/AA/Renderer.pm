@@ -3,6 +3,7 @@ package P9::AA::Renderer;
 use strict;
 use warnings;
 
+use Data::Dumper;
 use POSIX qw(strftime);
 use Time::HiRes qw(time);
 use Scalar::Util qw(blessed);
@@ -108,6 +109,18 @@ sub uri {
 		$self->{_uri} = $uri;
 	}
 	return $self->{_uri};
+}
+
+sub renderValTxt {
+	my ($self, $val) = @_;
+	return '' unless (defined $val);
+	return $val if (ref($val) eq '');
+	
+	my $d = Data::Dumper->new([ $val ]);
+	$d->Terse(1);
+	$d->Indent(1);
+	$d->Varname(0);
+	return $d->Dump();
 }
 
 =head1 SEE ALSO

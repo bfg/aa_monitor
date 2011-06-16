@@ -955,6 +955,16 @@ sub validate_regex {
 	P9::AA::ParamValidator::validator_regex(@_);
 }
 
+=head2 validate_complex
+
+See L<P9::AA::ParamValidator#validator_complex> for instructions.
+
+=cut
+sub validate_complex {
+	shift;
+	P9::AA::ParamValidator::validator_complex(@_);
+}
+
 ##############################################
 #        tie() handle support methods        #
 ##############################################

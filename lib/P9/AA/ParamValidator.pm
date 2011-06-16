@@ -17,11 +17,20 @@ use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 	validator_str
 	validator_ucstr
 	validator_lcstr
+	validator_list
+	validator_hash
+	validator_str_ltrim
+	validator_str_rtrim
+	validator_str_trim
+	validator_string
 );
 
 $EXPORT_TAGS{':all'} = @EXPORT_OK;
 
-our $VERSION = 0.10;
+our $VERSION = 0.11;
+
+my $_has_base64 = undef;
+my $_has_json = undef;
 
 =head1 NAME
 
@@ -297,7 +306,7 @@ sub validator_hash {
 	};
 }
 
-=head2 validator_regex ()
+=head2 validator_regex
 
 Returns string to compiled regex coderef validator. Coderef has the
 the following prototype:
@@ -335,6 +344,105 @@ sub validator_regex {
 		my $regex = _compile_regex($str);
 		return (defined $regex) ? $regex : $default;
 	};
+}
+
+=head2 validator_complex ([ $default = undef ])
+
+Returns string to complex perl data structure validator. Coderef has the following prototype:
+
+ $code->({ $base64_encoded_string | $json_string | $perl_ref}, [ $default = undef ] );
+
+This validator returns original argument if it is HASH or ARRAY reference. If argument is
+string or SCALAR reference it tries to parse it as JSON string. If string is prefixed with
+B<base64:> string will be base64 decoded before trying to decode JSON. 
+
+EXAMPLES:
+
+ my $json_string = '{ "X": { "Y": "Z" } }';
+ my $base64_str = 'base64:' . encode_base64($json_string);
+ 
+ # create validator which returns empty hashref on parsing error
+ my $code = validator_complex({})
+ 
+ my $ref = $code->($base64_str);
+ my $ref = $code->($base64_str, { a => 'b' });
+ 
+ my $ref = $code->($json_string)
+ my $ref = $code->($json_string, { c => 'd' });
+
+=cut
+sub validator_complex {
+	my ($default) = @_;
+	return sub {
+		my ($data, $def) = @_;
+		$def = $default unless (defined $def);
+		return $def unless (defined $data);
+		
+		# array or hash ref? return it!
+		my $ref = ref($data);
+		if ($ref eq 'HASH' || $ref eq 'ARRAY') {
+			return $data;
+		}
+		# plain JSON string?
+		elsif ($ref eq '' || $ref eq 'SCALAR') {
+			# no json support? this sucks...
+			return $def unless (_has_json());
+			
+			# create string ref.
+			my $str = ($ref eq 'SCALAR') ? $data : \ $data;
+			
+			# base64 encoded JSON string?
+			if (${$str} =~ m/^base64:/i) {
+				# no base64 support? return default value
+				return $def unless (_has_base64());
+				
+				# remove base64: prefix
+				${$str} = substr(${$str}, 6);
+				
+				# decode string
+				${$str} = MIME::Base64::decode_base64(${$str});
+			}
+			
+			# try to decode json
+			my $jp = JSON->new();
+			$jp->utf8(1);
+			$jp->relaxed(1);
+			local $@;
+			my $s = eval { $jp->decode(${$str}) };
+			if ($@) {
+				my $err = $@;
+				eval 'require P9::AA::Log';
+				unless ($@) {
+					my $l = P9::AA::Log->new();
+					$l->error("Error parsing base64 JSON string: $err");
+				}
+			}
+			
+			return (defined $s) ? $s : $def;
+		}
+		# looks like something else... return default value
+		else {
+			return $def
+		}
+	};
+}
+
+sub _has_base64 {
+	return $_has_base64 if (defined $_has_base64);
+	
+	# check it...
+	local $@;
+	$_has_base64 = eval 'use MIME::Base64; 1';
+	return $_has_base64;	
+}
+
+sub _has_json {
+	return $_has_json if (defined $_has_json);
+	
+	# check it...
+	local $@;
+	$_has_json = eval 'use JSON; 1';
+	return $_has_json;
 }
 
 sub _as_str {

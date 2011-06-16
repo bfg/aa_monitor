@@ -14,7 +14,105 @@ our $VERSION = 0.10;
 
 =head1 NAME
 
-Embed and combine other check modules and perform complex checks.
+Embed and combine other check modules to perform complex checks.
+
+=head1 DESCRIPTION
+
+Sometimes several different checks must be performed in specific order to discover
+real state of some service. For example, if you want the check state of your LAMP
+production, you must check MySQL database, Apache webserver and PHP FCGI interpreter.
+
+=head1 SYSNOPSIS
+
+Generate JSON file with check settings.
+
+ {
+   "debug": false,
+   "expression": "APACHE && MYSQL && PHP",
+   "check_definitions": {
+      "APACHE": {
+         "module": "ProxyCheck",
+         "params": {
+            "REAL_HOSTPORT": "host.example.org:1552",
+            "REAL_MODULE": "Process",
+            "cmd":  "/^apache2\\s+/",
+            "use_basename": true,
+            "min_process_count": 3
+          }
+      },
+      "PHP": {
+         "module": "ProxyCheck",
+         "params": {
+            "REAL_HOSTPORT": "host.example.org:1552",
+            "REAL_MODULE": "Process",
+            "cmd":  "/^php-cgi\\s+/",
+            "use_basename": true,
+            "min_process_count": 3
+         }
+      },
+      "MYSQL": {
+         "module": "DBI",
+         "params": {
+            "dsn": "DBI:mysql:database=db_name;host=host.example.org;port=3306",
+            "query":  "SELECT COUNT(*) FROM table_name",
+            "username": "some_user",
+            "password": "secr3t"
+         }
+      }
+   }
+ }
+
+Query for status using cURL:
+
+ curl -X POST --data-binary @stackedcheck.json  -H "Content-Type: application/json" http://localhost:1552/StackedCheck.txt
+
+Parameter B<check_definitions> has complex datatype, but it can be also set using GET request method. Here's the recipe:
+
+=over
+
+=item * put parameter B<check_definitions> to it's own file
+
+ {
+      "APACHE": {
+         "module": "ProxyCheck",
+         "params": {
+            "REAL_HOSTPORT": "host.example.org:1552",
+            "REAL_MODULE": "Process",
+            "cmd":  "/^apache2\\s+/",
+            "use_basename": true,
+            "min_process_count": 3
+          }
+      },
+      "PHP": {
+         "module": "ProxyCheck",
+         "params": {
+            "REAL_HOSTPORT": "host.example.org:1552",
+            "REAL_MODULE": "Process",
+            "cmd":  "/^php-cgi\\s+/",
+            "use_basename": true,
+            "min_process_count": 3
+         }
+      },
+      "MYSQL": {
+         "module": "DBI",
+         "params": {
+            "dsn": "DBI:mysql:database=db_name;host=host.example.org;port=3306",
+            "query":  "SELECT COUNT(*) FROM table_name",
+            "username": "some_user",
+            "password": "secr3t"
+         }
+      }
+ }
+
+=item * convert file to base64 encoded string
+
+ $ base64 -w 0 < check_definitions.json
+
+=item * build URL, add B<base64:> prefix to B<check_definitions> url parameter
+
+ $ curl http://localhost:1552/StackedCheck/?debug=true&expression=APACHE%20%26%26%20MYSQL%20%26%26%20PHP&check_definitions=base64:<base64_string>
+
+=back 
 
 =cut
 sub clearParams {
@@ -25,29 +123,22 @@ sub clearParams {
 
 	# set module description
 	$self->setDescription(
-		"Embed and combine other check modules and perform complex checks. WARNING: EXPERIMENTAL MODULE!"
+		"Embed and combine other check modules and perform complex checks."
 	);
 
 	# define additional configuration variables...
 	$self->cfgParamAdd(
 		'expression',
 		undef,
-		'Stacked check expression.',
+		'Stacked check expression, see module documentation for details.',
 		$self->validate_str(4 * 1024)
 	);
 	$self->cfgParamAdd(
 		'check_definitions',
 		{},
-		'Check definition',
-		\ &_validator,
+		'Check definitions, see module documentation for details.',
+		$self->validate_complex()
 	);
-	
-	# checks hash
-	$self->{_checks} = {};
-
-	# you can also remove any previously created
-	# configuration parameter.
-	# $self->cfgParamRemove('debug');
 	
 	# this method MUST return 1!
 	return 1;
@@ -56,102 +147,23 @@ sub clearParams {
 # actually performs ping
 sub check {
 	my ($self) = @_;
-	$self->{_checks} = {};
 	return CHECK_ERR unless ($self->_checkParams());
 	
-	# check results...
-	my $cr = {};
+	# generate expression code
+	my $code = $self->_generateCode($self->{expression});
+	return CHECK_ERR unless (defined $code);
 	
-	# perform all specified checks...
-	foreach my $name (keys %{$self->{check_definitions}}) {
-		my $def = $self->{check_definitions}->{$name};
-		my $module = $def->{module};
-		my $params = $def->{params};
-		
-		# create harness...
-		my $h = P9::AA::CheckHarness->new();
-		my $ts = time();
-		
-		# perform check
-		my $res = $h->check($module, $params, $ts);
-		
-		# store stuff
-		$cr->{$name} = $res;
-	}
-	
-	# validate check results against check expression
-	return ($self->_validateCheckResults($cr)) ? CHECK_OK : CHECK_ERR;
-}
-
-sub _validateCheckResults {
-	my ($self, $cr) = @_;
-	
-	my $exp = $self->{expression};
-	
-	$exp =~ s/\s*([\w]+)\s*/ \$o->_perform(\'$1\', \$d) /g;
-	my $code_str = 'sub { my $o = shift; my $d = shift; return(' . $exp . ') }';
-	
-	# compile code
+	# execute expression code
 	local $@;
-	my $code = eval $code_str;
+	my $res = eval { $code->($self) };
 	if ($@) {
-		$self->error("Error compiling check expression code: $@");
-		return 0;
-	}
-	unless (defined $code && ref($code) eq 'CODE') {
-		$self->error("Error compiling check expression code: eval returned undefined code reference.");
-		return 0;
+		my $e = $@;
+		$e =~ s/[\r\n]+$//g;
+		return $self->error("Exception executing expression code: $e");
 	}
 	
-	# run the code
-	$self->bufApp("--- BEGIN STACKED CHECKS ---");
-	local $@;
-	my $res = $code->($self, $cr);
-	if ($@) {
-		$self->error("Error running check expression code: $@");
-		return 0;
-	}
-	$self->bufApp("--- END STACKED CHECKS ---");
-	
-	unless ($res) {
-		$self->error("Check expression code returned false value.");
-	}
-	return $res;
-}
-
-sub _perform {
-	my ($self, $name, $cr) = @_;
-
-	# get result
-	my $c = $cr->{$name}->{data}->{check};
-	my $res = $c->{result_code};
-	$res = CHECK_ERR unless (defined $res);
-	
-	# convert to boolean value
-	my $val = ($res == CHECK_OK || $res == CHECK_WARN) ? 1 : 0;
-	
-	# build buffer message
-	my $buf = sprintf("CHECK %-30s: %d", $name, $val);
-	$buf .= " [";
-	$buf .= "success" if ($c->{success});
-	if ($c->{warning}) {
-		$buf .= "warning: $c->{warning_message}"
-	}
-	unless ($c->{success} || $c->{warning}) {
-		$buf .= "error: $c->{error_message}";
-	}
-	$buf .= "]";
-	$self->bufApp($buf);
-
-	# should we print message buffer?
-	if ($self->{debug}) {
-		$self->bufApp("--- BEGIN CHECK MESSAGES ---");
-		$self->bufApp($c->{messages});
-		$self->bufApp("--- END CHECK MESSAGES ---");
-		$self->bufApp();
-	}
-	
-	return $val;
+	# return result
+	return ($res) ? CHECK_OK : CHECK_ERR;
 }
 
 sub toString {
@@ -190,7 +202,6 @@ sub _checkParams {
 		# params?
 		$params = {} unless (defined $params && ref($params) eq 'HASH');
 		$def->{params} = $params;
-		
  	}
  	
  	# check expression
@@ -203,33 +214,101 @@ sub _checkParams {
  	return 1;
 }
 
-# hash parameter validator
-sub _validator {
-	my ($cfg) = @_;
-	
-	my $ref = ref($cfg);
-	
-	# already a hash?
-	if ($ref eq 'HASH') {
-		return $cfg;
+sub _performSubCheck {
+	my ($self, $name) = @_;
+	unless (defined $name && length($name) > 0) {
+		die "Undefined check name.\n";
 	}
-	# string?
-	elsif ($ref eq '') {
-		use JSON;
-		my $j = JSON->new();
-		$j->utf8(1);
-		$j->relaxed(1);
-		
-		# try to decode
-		local $@;
-		my $res = eval { $j->decode($cfg) };
-		if ($@) {
-			print STDERR "Error decoding configuration string to hash: $@\n";
-		}
-		return $res if defined $res;
+	unless (exists($self->{check_definitions}->{$name})) {
+		die "Check name '$name' doesn't exist in check_definitions.\n";
 	}
 
-	return {};
+	my $c = $self->{check_definitions}->{$name};
+	
+	my $module = $c->{module};
+	my $params = $c->{params};
+
+	# create harness...
+	my $h = P9::AA::CheckHarness->new();
+	my $ts = time();
+		
+	# perform check
+	my $res = $h->check($c->{module}, $c->{params}, $ts);
+	
+	return $self->_validateSubCheckResult($name, $res);
+}
+
+sub _validateSubCheckResult {
+	my ($self, $name, $result) = @_;
+	unless (defined $result && ref($result) eq 'HASH') {
+		die "Check $name returned invalid result structure.\n";
+	}
+	
+	my $c = $result->{data}->{check};
+	my $res = $c->{result_code};
+	unless (defined $res) {
+		die "Check $name returned invalid result code.\n";
+	}
+	
+	# convert to boolean value
+	my $val = ($res == CHECK_OK || $res == CHECK_WARN) ? 1 : 0;
+	
+	# build buffer message
+	my $buf = sprintf("CHECK %-30s: %d", $name, $val);
+	$buf .= " [";
+	$buf .= "success" if ($c->{success});
+	if ($c->{warning}) {
+		$buf .= "warning: $c->{warning_message}"
+	}
+	unless ($c->{success} || $c->{warning}) {
+		$buf .= "error: $c->{error_message}";
+	}
+	$buf .= "]";
+	$self->bufApp($buf);
+
+	# should we print message buffer?
+	if ($self->{debug}) {
+		$self->bufApp();
+		$self->bufApp("=== BEGIN CHECK MESSAGES: $name");
+		$self->bufApp($c->{messages});
+		$self->bufApp();		
+	}
+	
+	return $val;
+}
+
+sub _generateCode {
+	my ($self, $expr) = @_;
+	unless (defined $expr && length($expr) > 0) {
+		$self->error("Undefined expression.");
+		return undef;
+	}
+	
+	# check for invalid chars...
+	if ($expr =~ m/[^\w\^\|&=\!<>\(\)\ ]+/i) {
+		$self->error("Expression contains invalid characters.");
+		return undef;
+	}
+	
+	# do some search and replaces
+	$expr =~ s/\s*([\w]+)\s*/ \$_[0]->_performSubCheck(\'$1\') /g;
+	my $code_str = 'sub { return(' . $expr . ') }';
+
+	# print STDERR "GENERATED CODE:\n" . $code_str . "\n";
+	
+	# compile code
+	local $@;
+	my $code = eval $code_str;
+	if ($@) {
+		$self->error("Error compiling check expression code: $@");
+		return undef;
+	}
+	unless (defined $code && ref($code) eq 'CODE') {
+		$self->error("Error compiling check expression code: eval returned undefined code reference.");
+		return undef;
+	}
+
+	return $code;
 }
 
 =head1 SEE ALSO

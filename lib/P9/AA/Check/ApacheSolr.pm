@@ -96,9 +96,6 @@ sub check {
 	my $old_version = $self->hoGet(HKEY_VERSION);
 	my $old_time = $self->hoGet(HKEY_TIME);
 
-	$self->bufApp("OLD: version: $old_version, time: $old_time");
-	$self->bufApp("CUR: version: $cur_version, time: $ts");
-	
 	# did index version changed?
 	my $version_diff = ((defined $old_version && defined $cur_version && $old_version ne $cur_version) || (! defined $old_version && defined $cur_version)) ? 1 : 0;
 
@@ -111,17 +108,23 @@ sub check {
 				" [" . ($ts - $old_time) . " second(s)]."
 			);
 			$result = CHECK_ERR;
+		} else {
 		}
-	} else {
-		
-	}
-	
+	}	
 	outta_check:
 	
-	# save current index version and change time
+	# save current index version and change time if
+	# index version has changed
 	if ($version_diff) {
-		$self->bufApp("updating history: version: $cur_version; time: $ts");
-		$self->hnSet(HKEY_VERSION, $cur_version) if (defined $cur_version);
+		if (defined $cur_version) {
+			$self->bufApp();
+			$self->bufApp(
+				"Index version changed from $old_time to $cur_version since " .
+				strftime("%Y/%m/%d %H:%M:%S", localtime($old_time)) .
+				" [" . ($ts - $old_time) . " second(s)]."				
+			);
+			$self->hnSet(HKEY_VERSION, $cur_version);
+		}
 		$self->hnSet(HKEY_TIME, $ts);
 	}
 	

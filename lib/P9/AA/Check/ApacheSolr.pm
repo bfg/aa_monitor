@@ -74,12 +74,7 @@ sub check {
 		$result = CHECK_ERR;
 		goto outta_check;
 	}
-	
-	# get current time...
-	my $ts = time();
-	
-	# $self->bufApp("OLD history: " . $self->dumpVar($ho));
-	
+		
 	# print stats
 	$self->bufApp("Apache SolR data:");
 	map {
@@ -87,6 +82,9 @@ sub check {
 	} sort keys %{$stats->{'searcher'}->{'stats'}->{'stat'}};
 
 	# Phase III: check index version
+
+	# get current time...
+	my $ts = time();
 
 	# get current index version
 	my $cur_version = $self->getSolrIndexVersion($stats);
@@ -117,15 +115,24 @@ sub check {
 	# index version has changed
 	if ($version_diff) {
 		if (defined $cur_version) {
+			$old_time = time() unless (defined $old_time);
 			$self->bufApp();
 			$self->bufApp(
 				"Index version changed from $old_time to $cur_version since " .
 				strftime("%Y/%m/%d %H:%M:%S", localtime($old_time)) .
-				" [" . ($ts - $old_time) . " second(s)]."				
+				" [" . ($ts - $old_time) . " second(s) ago]."				
 			);
 			$self->hnSet(HKEY_VERSION, $cur_version);
 		}
 		$self->hnSet(HKEY_TIME, $ts);
+	}
+	elsif ($self->{index_update_interval}) {
+		$self->bufApp();
+		$self->bufApp(
+			"Last index version change to version $old_version detected at " .
+			strftime("%Y/%m/%d %H:%M:%S", localtime($old_time)) .
+			" [" . ($ts - $old_time) . " second(s) ago]."		
+		);
 	}
 	
 	return $result;

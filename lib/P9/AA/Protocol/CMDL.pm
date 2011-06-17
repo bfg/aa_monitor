@@ -11,8 +11,12 @@ use P9::AA::Protocol;
 use vars qw(@ISA);
 @ISA = qw(P9::AA::Protocol);
 
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 my $log = P9::AA::Log->new();
+
+use constant MAX_JSON_FILE_SIZE => 1024 * 1024 * 4;
+
+my $_has_json = undef;
 
 =head1 NAME
 
@@ -38,20 +42,37 @@ sub process {
 	
 	my $fatal_exit = $self->exitCodeFatal();
 	
-	# "parse" command line
+	# "parse" command line	
 	my $params = {};
+	my $module = undef;
+
 	# first argument should be module name
 	if (${$argv}[0] !~ m/=/) {
-		$params->{module} = shift(@{$argv});
+		$module = shift(@{$argv});
 	}
+	
+	# process arguments
+
+	# is first argument filename? We should parse json data then...
+	if (defined ${$argv}[0] && ${$argv}[0] !~ m/=/ && (${$argv}[0] eq '-' || -f ${$argv}[0])) {
+		my $f = shift(@{$argv});
+		my $u = P9::AA::Util->new();
+		$params = $u->parseJsonFile($f);
+		unless (defined $params) {
+			print "ERROR: Problem parsing JSON parameters file: ", $u->error(), "\n";
+			exit $fatal_exit;
+		}
+	}
+	
+	# process other arguments...
 	foreach (@{$argv}) {
 		my ($k, $v) = split(/\s*=\s*/, $_, 2);
 		next unless (defined $k && defined $v);
 		$params->{$k} = $v;
-	};
+	}
 	
-	# get module
-	my $module = delete($params->{module});
+	# get module name from parameters if it's not defined already...
+	$module = delete($params->{module}) unless (defined $module);
 	# remove weird stuff from module name...
 	$module =~ s/[^\w]+//g if (defined $module);
 	

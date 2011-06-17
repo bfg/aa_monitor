@@ -139,6 +139,12 @@ sub clearParams {
 		'Check definitions, see module documentation for details.',
 		$self->validate_complex()
 	);
+	$self->cfgParamAdd(
+		'use_cache',
+		1,
+		'Cache real check results, subchecks will be performed only once.',
+		$self->validate_bool()
+	);
 	
 	# this method MUST return 1!
 	return 1;
@@ -152,6 +158,9 @@ sub check {
 	# generate expression code
 	my $code = $self->_generateCode($self->{expression});
 	return CHECK_ERR unless (defined $code);
+	
+	# clear check cache
+	$self->{_cache} = {} if ($self->{use_cache});
 	
 	# execute expression code
 	local $@;
@@ -222,19 +231,28 @@ sub _performSubCheck {
 	unless (exists($self->{check_definitions}->{$name})) {
 		die "Check name '$name' doesn't exist in check_definitions.\n";
 	}
-
-	my $c = $self->{check_definitions}->{$name};
 	
-	my $module = $c->{module};
-	my $params = $c->{params};
-
-	# create harness...
-	my $h = P9::AA::CheckHarness->new();
-	my $ts = time();
+	# check result
+	my $res = undef;
+	
+	# check result cache?
+	if ($self->{use_cache} && exists($self->{_cache}->{$name})) {
+		$res = $self->{_cache}->{$name};
+	} else {
+		# create harness...
+		my $h = P9::AA::CheckHarness->new();
+		my $ts = time();
 		
-	# perform check
-	my $res = $h->check($c->{module}, $c->{params}, $ts);
-	
+		# perform check
+		my $c = $self->{check_definitions}->{$name};
+		$res = $h->check($c->{module}, $c->{params}, $ts);
+		
+		# put it in cache
+		if ($self->{use_cache} && defined $res && ref($res) eq 'HASH') {
+			$self->{_cache}->{$name} = $res;
+		}
+	}
+
 	return $self->_validateSubCheckResult($name, $res);
 }
 

@@ -10,6 +10,8 @@ aa_monitor changelog
 
 =item * feature: command line/nagios/icinga client can now read check parameters in JSON format from file or stdin
 
+=item * feature: command line client can now display readme, credits and changelog documentation
+
 =item * new module L<B<ApacheSolr>|P9::AA::Check::ApacheSolr> - checks your L<Apache Solr|http://lucene.apache.org/solr> server :)
 
 =item * new module L<B<StackedCheck>|P9::AA::Check::StackedCheck> - perform complex checks embeding other check modules.

@@ -4,9 +4,11 @@ aa_monitor changelog
 
 =head1 VERSIONS
 
-=head2 1.0.6
+=head2 1.1.0
 
 =over
+
+=item * feature: command line/nagios/icinga client can now read check parameters in JSON format from file or stdin
 
 =item * new module L<B<ApacheSolr>|P9::AA::Check::ApacheSolr> - checks your L<Apache Solr|http://lucene.apache.org/solr> server :)
 
@@ -26,6 +28,10 @@ B<two_way> - two-way replication check
 =item * helper module L<B<_Socket>|P9::AA::Check::_Socket>: Implemented L<B<IO::Socket::SSL>|IO::Socket::SSL> version <= B<1.44> warning
 
 =item * HTML output renderer: display general L<B<Check>|P9::AA::Check> module doc if module was not specified.
+
+=item * class L<B<CheckHarness>|P9::AA::CheckHarness> Fixed nasty old history loading bug. Custom keys were not preserved during reloads.
+
+=item * some code refactoring
 
 =back
 

@@ -52,7 +52,11 @@ Returns last error.
 
 =cut
 sub error {
-	return shift->{_error};
+	my $self = shift;
+	if (@_) {
+		$self->{_error} = join('', @_);
+	}
+	return $self->{_error};
 }
 
 =head2 qx
@@ -90,7 +94,7 @@ B<NOTE:> Exit code is computed from B<$?> using L<getExitCode> method.
 sub qx {
 	my $self = shift;
 	unless (@_) {
-		$self->_error('No command was given.');
+		$self->error('No command was given.');
 		return undef;
 	}
 
@@ -103,7 +107,7 @@ sub qx {
 	@{$result} = qx/@_/;
 	my $s = $?;
 	if ($@) {
-		$self->_error("Exception while running command '$cmd_str': $@");
+		$self->error("Exception while running command '$cmd_str': $@");
 		return undef;
 	}
 	my $exit_code = $self->getExitCode($s);
@@ -135,7 +139,7 @@ See also L<qx> method for return argument description.
 sub qx2 {
 	my $self = shift;
 	unless (@_) {
-		$self->_error("No command to run was given.");
+		$self->error("No command to run was given.");
 		return undef;
 	}
 
@@ -170,11 +174,11 @@ code. Returns B<-1> for failed execution, otherwise exit code.
 sub getExitCode {
 	my ($self, $code) = @_;
 	if ($code < 0) {
-		$self->_error("Failed to execute: $!");
+		$self->error("Failed to execute: $!");
 		return -1;
 	}
 	elsif ($code & 127) {
-		$self->_error("Process died with signal "
+		$self->error("Process died with signal "
 			  . ($code & 127) . ", "
 			  . ($code & 128) ? "with" : "without" . " coredump.");
 		return -1;
@@ -196,7 +200,7 @@ otherwise undef.
 sub which {
 	my ($self, $prog) = @_;
 	unless (defined $prog) {
-		$self->_error("Undefined program name.");
+		$self->error("Undefined program name.");
 		return undef;
 	}
 
@@ -206,7 +210,7 @@ sub which {
 	# sanitize prog
 	$prog =~ s/[^\w\-\.]//gi;
 	unless (length($prog)) {
-		$self->_error("Zero-length program name.");
+		$self->error("Zero-length program name.");
 		return undef;
 	}
 
@@ -220,7 +224,7 @@ sub which {
 		}
 	}
 
-	$self->_error("Program '$prog' was not found in \$PATH.");
+	$self->error("Program '$prog' was not found in \$PATH.");
 	return undef;
 }
 
@@ -325,26 +329,12 @@ sub getJsonParser {
 
 Tries to parse specified JSON file and returns hash or array reference on success, otherwise undef.
 
+B<NOTE>: $filename argument can be anything that is supported by method L</readFile>.
+
 =cut
 sub parseJsonFile {
 	my ($self, $file, $maxlen) = @_;
 	$maxlen = MAX_FILE_SIZE unless (defined $maxlen);
-	
-	# try to stat file
-	my @s = stat($file);
-	unless (@s) {
-		$self->error("Unable to stat JSON file '$file': $!");
-		return undef;
-	}
-	
-	# too big file?
-	if ($maxlen > 0 && $s[7] > $maxlen) {
-		$self->error(
-			"JSON file size too big: $s[7] bytes. " .
-			"I'm unwilling to parse (max allowrd size: $maxlen bytes)."
-		);
-		return undef;
-	}
 	
 	# read file
 	my $buf = $self->readFile($file, $maxlen);
@@ -381,6 +371,7 @@ sub parseJson {
 	if ($@) {
 		my $e = $@;
 		$e =~ s/[\r\n]+$//g;
+		$e =~ s/\s+at\s+\/.+//g;
 		$self->error("Error decoding JSON: " . $e);
 		return undef;
 	}
@@ -536,15 +527,6 @@ sub hasXML {
 
 	$self->error("Module XML::Simple is not available.") unless ($_has_xml);
 	return $_has_xml;
-}
-
-sub _error {
-	my $self = shift;
-	if (@_) {
-		$self->{_error} = join('', @_);
-	} else {
-		$self->{_error} = '';
-	}
 }
 
 =head1 AUTHOR

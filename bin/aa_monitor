@@ -247,8 +247,8 @@ EOF
 	print "  -X      --protocol=PROTO Specifies daemon protocol (Default: ", print_var($cfg->get('protocol')), ")\n";
 	print "  -P      --pid-file       Daemon pid file (Default: ", print_var($cfg->get('pid_file')), ")\n";
 	print "\n";
-	print "          --daemon         Run as daemon (Default: ", print_var($cfg->get('daemon'), 1), ")\n";
-	print "          --no-daemon      Don't run as daemon\n";
+	print "          --daemon         Start daemon, fork to background\n";
+	print "          --daemon-fg      Start daemon, don't fork to background\n";
 	print "\n";
 	print "          --daemon-impl    Specifies daemon implementation (Default: ", print_var($cfg->get('daemon_impl')), ")\n";
 	print "  -u      --user           Run as specified user. Requires root startup privileges. (Default: ", print_var($cfg->get('user')), ")\n";
@@ -336,6 +336,8 @@ if (invoked_as_cgi()) {
 	exit 0;
 }
 
+my $args_ok = 0;
+
 # parse command line
 Getopt::Long::Configure('bundling', 'gnu_compat');
 my $r = GetOptions(
@@ -344,13 +346,14 @@ my $r = GetOptions(
 		print $cfg->toString();
 		exit 0;
 	},
-	'e|cmdline' => \ $cmd_line,
-	'N|nagios' => sub { $cmd_line = 1; $nagios = 1 },
+	'e|cmdline' => sub { $args_ok = 1; $cmd_line = 1 },
+	'N|nagios' => sub { $args_ok = 1; $cmd_line = 1; $nagios = 1 },
 	'p|port=i' => sub { $cfg->set('listen_port', $_[1]) },
 	'H|addr=s' => sub { $cfg->set('listen_addr', $_[1]) },
 	'X|protocol=s' => sub { $cfg->set('protocol', $_[1]) },
 	'P|pid-file=s' => sub { $cfg->set('pid_file', $_[1]) },
-	'daemon!' => sub { $cfg->set('daemon', $_[1]) },
+	'daemon' => sub { $args_ok = 1; $cfg->set('daemon', 1) },
+	'daemon-fg' => sub {  $args_ok = 1; $cfg->set('daemon', 0) },
 	'daemon-impl=s' => sub { $cfg->set('daemon_impl', $_[1]) },
 	'u|user=s' => sub { $cfg->set('user', $_[1]) },
 	'g|group=s' => sub { $cfg->set('group', $_[1]) },
@@ -393,8 +396,13 @@ my $r = GetOptions(
 );
 
 unless ($r) {
-	print STDERR "Invalid command line options. Run $MYNAME --help for help.\n";
-	exit 1;
+	print STDERR "Invalid command line options. Run $MYNAME --help for instructions.\n";
+	exit 255;
+}
+unless ($args_ok) {
+	print STDERR "Invalid command line: Do you want to run $MYNAME in daemon, command line or nagios/icinga mode?\n";
+	print STDERR "Run $MYNAME --help for instructions.\n";
+	exit 255;
 }
 
 # assign log level

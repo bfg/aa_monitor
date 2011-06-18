@@ -130,7 +130,8 @@ L<P9::AA::CheckHarness>,
 L<P9::AA::Renderer::JSON>, 
 L<P9::AA::Renderer::XML>,  
 L<P9::AA::Renderer::HTML>, 
-L<P9::AA::Renderer::PLAIN>
+L<P9::AA::Renderer::PLAIN>, 
+L<P9::AA::Renderer::STORABLE>
 
 =head1 AUTHOR
 

@@ -220,7 +220,7 @@ sub getUa {
 	}
 	
 	# set max max redirects?
-	if ($self->{redirects} >= 0) {
+	if (defined $self->{redirects} && $self->{redirects} >= 0) {
 		$lwp->max_redirect($self->{redirects});
 	}
 

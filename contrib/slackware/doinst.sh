@@ -18,9 +18,6 @@ config() {
 config etc/sysconfig/aa_monitor.new
 config etc/aa_monitor/aa_monitor.conf.new
 
-# TODO: remove in future versions
-killall -9 aa_monitor.pl >/dev/null 2>&1
-
 # restart aa_monitor
 etc/init.d/aa_monitor restart
 

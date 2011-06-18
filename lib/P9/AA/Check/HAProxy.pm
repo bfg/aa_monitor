@@ -63,7 +63,14 @@ sub clearParams {
 		'haproxy_url',
 		'http://localhost:8089/',
 		'HaProxy web interface URL or UNIX domain statistcs socket path.',
-		$self->validate_str(1024),
+		sub {
+			my $validator = $self->validate_str(1024);
+			my $r = $validator->(@_);
+			unless ($r =~ m/\?/ && $r =~ m/\/$/) {
+				$r .= '/';
+			}
+			return $r;
+		}
 	);
 
 	$self->cfgParamAdd(
@@ -134,7 +141,7 @@ sub check {
 			my $n = $be->{nodes}->{$node};
 			my $status = uc($n->{status});
 			unless ($status eq 'UP') {
-				my $str = "BACKEND $name, NODE $node is not in OK state: $status";
+				my $str = "FARM $name, NODE $node is not in OK state: $status";
 				# check problem?
 				my $cs = uc($n->{check_status});
 				if (length($cs) > 0) {
@@ -155,11 +162,12 @@ sub check {
 		my $be_status = $be->{total}->{status};
 		$be_status = uc($be_status) if (defined $be_status);
 		if (defined $be_status && $be_status ne 'UP') {
+			my $str = "FARM $name is in state '$be_status'\n";
 			if ($self->_isIgnoredBe($name)) {
-				$warn .= "BACKEND $name is in state '$be_status'\n";
+				$warn .= $str;
 				$res = CHECK_WARN if ($res != CHECK_ERR);				
 			} else {
-				$err .= "BACKEND $name is in state '$be_status'\n";
+				$err .= $str;
 				$res = CHECK_ERR;
 			}
 		}

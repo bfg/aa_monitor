@@ -38,6 +38,14 @@ sub clearParams {
 		$self->validate_int(1, 8)
 	);
 	
+	# detailed view
+	$self->cfgParamAdd(
+		'detailed',
+		0,
+		'Turn detailed mode on or off. Detailed mode prints out more data.',
+		$self->validate_bool()
+	);
+	
 	return 1;
 }
 
@@ -46,15 +54,50 @@ sub check {
 	my ($self) = @_;
 
 	my @failed_vs = $self->_getFailedVolumeSets($self->{adapter});
+	return undef unless (defined $failed_vs[0]);
+
+	# are there any failed VolumeSets?
 	if (scalar @failed_vs) {
+
+		# do the summary
 		$self->error(
 			scalar @failed_vs . 
-			" error(s) found. The following VolumeSets have errors: " . 
+			" VolumeSet(s) have errors: " . 
 			join(', ', map { $_->{'Name'}; } @failed_vs)
 		);
+
+		# do some additional stuff if detailed mode is enabled
+		if ($self->{detailed}) {
+			# check for failed RAIDSets
+			my @failed_rs = $self->_getFailedRAIDSets($self->{adapter});
+			unless (@failed_rs) {
+				$self->bufApp("ERROR: Unable to get any RAIDSetData for adapter $self->{adapter}.");
+			}
+
+			# print out Disk data
+			my $dd = $self->getDiskData($self->{adapter});
+			if (defined $dd) {
+				$self->bufApp("INFO: all disk details: " . Dumper $dd);
+			}
+			else {
+				$self->bufApp("ERROR: Unable to get any DiskData for adapter $self->{adapter}.");
+			}
+
+			# print out Adapter data
+			my $ad = $self->getAdapterData($self->{adapter});
+			if (defined $ad) {
+				$self->bufApp("INFO: adapter details: " . Dumper $ad);
+			}
+			else {
+				$self->bufApp("ERROR: Unable to get any AdapterData for adapter $self->{adapter}.");
+			}
+		}
+
+		# return failure
 		return 0;
 	}
 	else {
+		# return success!
 		return 1;
 	}
 }
@@ -66,6 +109,27 @@ sub toString {
 
 	my $str = $self->{string_uppercase} . '/' . $self->{param_bool} . '/' . $self->{param_int};	
 	return $str
+}
+
+sub _getFailedRAIDSets {
+	my ($self, $adapter) = @_;
+
+	my $rsd = $self->getRAIDSetData($adapter);
+	unless (defined $rsd) {
+		$self->bufApp("ERROR: Unable to get any RAIDSet data for adapter $adapter.");
+		return undef;
+	}
+
+	# build a list of failed RAIDSets
+	my @failed_rs;
+	foreach my $rs (@$rsd) {
+		unless (exists $rs->{State} and $rs->{State} eq 'Normal') {
+			push(@failed_rs, $rs);
+			$self->bufApp("ERROR: RAIDSet named '$rs->{Name}' is out of order. Details of the RAIDSet: " . Dumper $rs);
+		}
+	}
+	
+	return @failed_rs;
 }
 
 sub _getFailedVolumeSets {
@@ -83,43 +147,8 @@ sub _getFailedVolumeSets {
 	foreach my $vs (@$vsd) {
 		unless (exists $vs->{State} and $vs->{State} eq 'Normal') {
 			push(@failed_vs, $vs);
-		}
-	}
-
-	# check to see if any VolumeSets are out of order
-	if (scalar @failed_vs) {
-
-		# some VolumeSets are definitely bad, get underlying RaidSet data
-		my $rsd = $self->getRAIDSetData($adapter);
-		unless (defined $rsd) {
-			$self->bufApp("ERROR: Unable to get any RAIDSet data for adapter $adapter.");
-			return undef;
-		}
-
-		# go through all failed VolumeSets and print out their associated RaidSets
-		foreach my $vs (@failed_vs) {
 			$self->bufApp("ERROR: VolumeSet named '$vs->{Name}' is out of order. Details of the VolumeSet: " . Dumper $vs);
-			foreach my $rs (@$rsd) {
-				next if ($rs->{Name} ne $vs->{'Raid Name'});
-				$self->bufApp("INFO: Details of the underlying RAIDSet named '$rs->{Name}' ('x' marks the spot!): " . Dumper $rs);
-			}
 		}
-
-		# print out Disk data
-		my $dd = $self->getDiskData($adapter);
-		unless (defined $dd) {
-			$self->bufApp("ERROR: Unable to get any DiskData for adapter $adapter.");
-			return undef;
-		}
-		$self->bufApp("INFO: all disk details: " . Dumper $dd);
-
-		# print out Adapter data
-		my $ad = $self->getAdapterData($adapter);
-		unless (defined $ad) {
-			$self->bufApp("ERROR: Unable to get any AdapterData for adapter $adapter.");
-			return undef;
-		}
-		$self->bufApp("INFO: adapter details: " . Dumper $ad);
 	}
 
 	return @failed_vs;

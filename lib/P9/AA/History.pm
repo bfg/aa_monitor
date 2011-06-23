@@ -7,14 +7,13 @@ use File::Spec;
 use Scalar::Util qw(blessed);
 use Storable qw(lock_nstore lock_retrieve dclone);
 
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 
 use constant IDENT_PREFIX => "history.";
 
 ##################################################
 #             OBJECT CONSTRUCTOR                 #
 ##################################################
-
 
 =head1 NAME
 
@@ -233,8 +232,16 @@ object regardless if loading of existing file succeeded or not.
 =cut
 sub load {
 	my ($self, $ident, $dir) = @_;
+	unless (defined $self && blessed($self)) {
+		$self = __PACKAGE__->new();
+	}
 	my $file = $self->_fname($dir, $ident);
-	return __PACKAGE__->new() unless (defined $ident && defined $file);
+
+	# no file or ident?
+	unless (defined $ident && defined $file) {
+		my $obj = __PACKAGE__->new();
+		$obj->ident($ident) if (defined $ident);
+	}
 
 	# try to load it.
 	local $@;
@@ -243,6 +250,11 @@ sub load {
 	# problem?
 	if ($@ || ! (defined $obj && blessed($obj) && $obj->isa(__PACKAGE__))) {
 		$obj = __PACKAGE__->new();
+		$obj->ident($ident);
+	}
+	
+	# set possibly missing ident
+	if (defined $obj && ! $obj->ident()) {
 		$obj->ident($ident);
 	}
 

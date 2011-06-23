@@ -10,7 +10,7 @@ use P9::AA::ParamValidator qw(validator_regex);
 
 use base 'P9::AA::Check';
 
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 
 my @script_interpreters = (
 	qr/bin\/(?:ba|a|c|z|k)?sh$/,		# shells
@@ -67,8 +67,14 @@ sub clearParams {
 	$self->cfgParamAdd(
 		'min_process_count',
 		1,
-		'Minumum number of processes that must be discovered.',
+		'Minimum number of processes that must be discovered.',
 		$self->validate_int(1),
+	);
+	$self->cfgParamAdd(
+		'max_process_count',
+		0,
+		'Maximum limit of discovered processes that describe "normal" state. Value of 0 disables limit.',
+		$self->validate_int(0),
 	);
 	
 	return 1;
@@ -110,6 +116,14 @@ sub check {
 		return $self->error(
 			"Discovered $num out of $self->{min_process_count} " .
 			"required process(es)."
+		);
+	}
+	
+	# too many processes?
+	if ($self->{max_process_count} > 0 && $num > $self->{max_process_count}) {
+		return $self->error(
+			"Discovered $num processes, which is more than specified " .
+			" limit $self->{max_process_count}."
 		);
 	}
 	

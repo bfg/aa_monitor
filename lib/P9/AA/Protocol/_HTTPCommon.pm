@@ -16,23 +16,7 @@ use base 'P9::AA::Protocol';
 our $VERSION = 0.10;
 
 my $log = P9::AA::Log->new();
-
-my $_has_json = undef;
-my $_has_xml = undef;
-
-sub hasJSON {
-	unless (defined $_has_json) {
-		$_has_json = eval { require JSON };
-	}
-	return $_has_json;
-}
-
-sub hasXML {
-	unless (defined $_has_xml) {
-		$_has_xml = eval { require XML::Simple };
-	}
-	return $_has_xml;
-}
+my $u = P9::AA::Util->new();
 
 sub urldecode {
 	shift if ($_[0] eq __PACKAGE__ || (blessed($_[0]) && $_[0]->isa(__PACKAGE__)));
@@ -45,29 +29,9 @@ sub urldecode {
 
 sub parseJSON {
 	my ($self, $data_ref) = @_;
-	unless ($self->hasJSON()) {
-		$self->error("JSON support is not available.");
-		return undef;
-	}
-	unless (ref($data_ref) eq 'SCALAR') {
-		$self->error("JSON string must be passed as scalar reference.");
-		return undef;
-	}
-	
-	# create parser...
-	my $p = JSON->new();
-	$p->utf8(1);
-	$p->relaxed(1);
-
-	# decode string...
-	my $d = eval { $p->decode(${$data_ref}) };
-
-	if ($@) {
-		$self->error("Error parsing JSON input: syntax errror.");
-		return undef;
-	}
-	elsif (ref($d) ne 'HASH') {
-		$self->error("Error parsing JSON input: not a hash reference.");
+	my $d = $u->parseJson($data_ref);
+	unless (defined $d && ref($d) eq 'HASH') {
+		$self->error("Error parsing JSON: " . $u->error());
 		return undef;
 	}
 
@@ -76,31 +40,10 @@ sub parseJSON {
 
 sub parseXML {
 	my ($self, $data_ref) = @_;
-	unless ($self->hasXML()) {
-		$self->error("XML support is not available.");
-		return undef;
+	my $d = $u->parseXML($data_ref);
+	unless (defined $d) {
+		$self->error($u->error());
 	}
-	
-	# create parser object...
-	my $p = XML::Simple->new(
-	);
-
-	# try to parse
-	my $d = eval { $p->parse_string($data_ref) };
-	if ($@) {
-		$self->error("Error parsing XML: syntax error.");
-		return undef;
-	}
-	elsif (! defined $d || ref($d) ne 'HASH') {
-		$self->error("Error parsing XML: parser returned invalid structure.");
-		return undef;
-	}
-	
-	
-	# TODO: improve xml parsing and figure out correct structure.
-	#use Data::Dumper;
-	#print "XML: ", Dumper($d), "\n";
-
 	return $d;
 }
 

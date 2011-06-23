@@ -357,7 +357,7 @@ header. Currenty only B<(application|text)/(json|xml)> are supported.
 
 =over
 
-=item L<AsProxy|P9::AA::Check::AsProxy>
+=item L<ApacheSolr|P9::AA::Check::ApacheSolr>
 
 =item L<CertificateDB|P9::AA::Check::CertificateDB>
 
@@ -428,6 +428,8 @@ header. Currenty only B<(application|text)/(json|xml)> are supported.
 =item L<POP3|P9::AA::Check::POP3>
 
 =item L<Process|P9::AA::Check::Process>
+
+=item L<ProxyCheck|P9::AA::Check::ProxyCheck>
 
 =item L<RTSP|P9::AA::Check::RTSP>
 

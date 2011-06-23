@@ -23,7 +23,7 @@ use P9::AA::Protocol::_HTTPCommon;
 
 use base 'P9::AA::Protocol::_HTTPCommon';
 
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 my $log = P9::AA::Log->new();
 my $cfg = P9::AA::Config->singleton();
 
@@ -268,7 +268,7 @@ sub response {
 
 	my $resp = HTTP::Response->new(400);
 	$resp->protocol('HTTP/1.1');
-	eval { no warnings; $resp->header('Server', sprintf("%s/%-.2f", main->name(), main->VERSION())) };
+	eval { no warnings; $resp->header('Server', sprintf("%s/%s", main->name(), main->VERSION())) };
 	$resp->date(CORE::time());
 	$resp->header('Cache-Control', 'no-cache, max-age=0');
 	$resp->header('Connection', 'close');

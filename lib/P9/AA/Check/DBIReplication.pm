@@ -8,7 +8,7 @@ use Time::HiRes qw(sleep);
 use P9::AA::Constants;
 use base 'P9::AA::Check::DBI';
 
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 
 =head1 NAME
 
@@ -49,6 +49,18 @@ sub clearParams {
 		'Maximum replication delay in milliseconds.',
 		$self->validate_int(1),
 	);
+	$self->cfgParamAdd(
+		'table_name',
+		'replication_test',
+		'Replication table name; table is automatically created.',
+		$self->validate_str_trim(64),
+	);
+	$self->cfgParamAdd(
+		'two_way',
+		0,
+		'Check replication operation both ways (dsn => peer_dsn AND peer_dsn => dsn)',
+		$self->validate_bool(),
+	);
 
 	$self->cfgParamRemove('query');
 
@@ -59,34 +71,83 @@ sub clearParams {
 # actually performs ping
 sub check {
 	my ($self) = @_;
+	# one-way replication...
+	$self->bufApp("Checking replication status A => B");
+	my $r = $self->_replicationCheck($self->{dsn}, $self->{peer_dsn});
+	if ($r != CHECK_OK) {
+		my $e = $self->error();
+		return $self->error("One-way (A => B) replication doesn't work: " . $e);
+	}
+	
+	# two way replication check?
+	if ($self->{two_way}) {
+		$self->bufApp();
+		$self->bufApp("Checking replication status B => A");
+		$r = $self->_replicationCheck($self->{peer_dsn}, $self->{dsn});
+		if ($r != CHECK_OK) {
+			my $e = $self->error();
+			$self->error("One-way (A => B) replication works, two-way (B => A) replication doesn't work: " . $e);			
+		}
+	}
+	
+	return $r;
+}
+
+sub _getTableName {
+	my $self = shift;
+	if (defined $self->{table_name} && length($self->{table_name}) > 0) {
+		return $self->{table_name};
+	} else {
+		return "checkrepl_table_" . sprintf("%-6.6d", int(rand(10000000)));
+	}
+}
+
+sub _createTableSQL {
+	my ($self, $table) = @_;
+	$table = $self->_getTableName() unless (defined $table && length($table));
+	return 'CREATE TABLE ' . $table . ' (a VARCHAR(100), PRIMARY KEY(a))';
+}
+
+sub _replicationCheck {
+	my ($self, $dsn_orig, $dsn_peer) = @_;
+
 	# try to connect...
 	my $db_ref = $self->dbiConnect(
-		$self->{dsn},
+		$dsn_orig,
 		$self->{username},
 		$self->{password}
 	);
 	return CHECK_ERR unless ($db_ref);
 
 	my $db_cmp = $self->dbiConnect(
-		$self->{peer_dsn},
+		$dsn_peer,
 		$self->{username},
 		$self->{password}
 	);
 	return CHECK_ERR unless ($db_cmp);
 	
-	# create table
-	my $table_name = $self->_getTableName();
-	
+	# check result...
 	my $result = CHECK_ERR;
 	
-	# create table on referential node...
-	my $ct_st = $self->dbiQuery($db_ref, $self->_createTableSQL($table_name));
-	unless (defined $ct_st) {
-		$self->error("Error creating replication test table $table_name on referential node: " . $self->error());
-		goto outta_check;
-	}
 	
-	# value
+	# ok, we're connected to both dbs...
+	# let's check if table does exist on the first connection
+	my $table_name = $self->_getTableName();
+	
+	my $st_exists = $self->dbiQuery(
+		$db_ref,
+		'SELECT COUNT(*) FROM ' . $table_name
+	);
+	unless ($st_exists) {
+		# nope, it does not exist, create it...
+		my $ct_st = $self->dbiQuery($db_ref, $self->_createTableSQL($table_name));
+		unless (defined $ct_st) {
+			$self->error("Error creating replication test table $table_name on referential node: " . $self->error());
+			goto outta_check;
+		}	
+	}
+
+	# compute value
 	my $repl_val = time() . '_' . rand();
 	
 	# insert random value
@@ -134,30 +195,21 @@ sub check {
 	}
 
 	outta_check:
-	
+
+	# drop table on referential node.
+	$self->dbiQuery($db_ref, 'DELETE FROM TABLE ' . $table_name) if (defined $db_ref);
+	$self->dbiQuery($db_cmp, 'DELETE FROM TABLE ' . $table_name) if (defined $db_cmp && $result != CHECK_OK);
+
 	# destroy statements
 	undef $ins_st;
 	undef $sel_st;
-	
-	# drop table on referential node.
-	$self->dbiQuery($db_ref, 'DROP TABLE ' . $table_name);
-	$self->dbiQuery($db_cmp, 'DROP TABLE ' . $table_name) unless ($result == CHECK_OK);
+	undef $st_exists;
 	
 	# close connections
 	$db_ref->disconnect();
 	$db_cmp->disconnect();
 
 	return $result;
-}
-
-sub _getTableName {
-	return "checkrepl_table_" . sprintf("%-6.6d", int(rand(10000000)));
-}
-
-sub _createTableSQL {
-	my ($self, $table) = @_;
-	$table = $self->_getTableName() unless (defined $table && length($table));
-	return 'CREATE TABLE ' . $table . ' (a VARCHAR(100))';
 }
 
 

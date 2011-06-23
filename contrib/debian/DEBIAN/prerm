@@ -1,10 +1,32 @@
 #!/bin/sh
 
-# shutdown aa_monitor service
-service aa_monitor stop
+case "$1" in
+	remove|purge|abort-install|abort-upgrade)
+		# This package is being removed, but its configuration has not yet
+		# been purged.
 
-# aa_monitor shouldn't start at system startup
-update-rc.d -f aa_monitor disable
-update-rc.d -f aa_monitor remove
+		# shutdown aa_monitor service		
+		service aa_monitor stop
 
+		# aa_monitor shouldn't start at system startup		
+		update-rc.d -f aa_monitor disable
+		update-rc.d -f aa_monitor remove
+
+		;;
+
+	disappear)
+		;;
+
+	upgrade)
+		;;
+
+	failed-upgrade)
+		;;
+
+	*) echo "$0: didn't understand being called with \`$1'" 1>&2
+		exit 1
+		;;
+esac
+
+exit 0
 # EOF

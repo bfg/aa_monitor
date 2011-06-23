@@ -10,10 +10,11 @@ use File::Basename;
 
 # determine libdir and put it into @INC
 use lib (
-	'/usr/lib/aa_monitor',
-	'/usr/local/lib/aa_monitor',
 	abs_path($FindBin::RealBin .  "/../" . "lib"),
 	abs_path($FindBin::RealBin .  "/../" . "ext"),
+	'/usr/lib/aa_monitor',
+	'/usr/local/lib/aa_monitor',
+	
 );
 
 use P9::AA::Log;
@@ -25,7 +26,7 @@ use P9::AA::Constants qw(:all);
 #############################################################
 my $MYNAME= basename($0);
 
-our $VERSION = '1.0.6';
+our $VERSION = '1.1.0';
 
 my $log = P9::AA::Log->new();
 my $cfg = P9::AA::Config->new();
@@ -159,12 +160,14 @@ sub perldoc {
 	my ($pkg) = @_;
 	my $prefix = 'P9::AA::';
 	my $doc = '';
-	if (! defined $pkg) {
+	if (! defined $pkg || length($pkg) < 1) {
 		$doc = 'P9::README_AA';
 	}
 	elsif ($pkg !~ m/::/) {
 		$doc = 'P9::AA::Check';
 		$doc .= '::' . $pkg if (length($pkg));
+	} else {
+		$doc = $pkg;
 	}
 	
 	eval "use Pod::Perldoc; 1";
@@ -216,7 +219,7 @@ This is aa_monitor, interface to modular service health checking
 architecture. This script can be used as:
 
  * command line client
- * nagios external check
+ * nagios/icinga external check
  * CGI script
  * standalone HTTP(s) server
  * standalone FCGI server
@@ -244,8 +247,8 @@ EOF
 	print "  -X      --protocol=PROTO Specifies daemon protocol (Default: ", print_var($cfg->get('protocol')), ")\n";
 	print "  -P      --pid-file       Daemon pid file (Default: ", print_var($cfg->get('pid_file')), ")\n";
 	print "\n";
-	print "          --daemon         Run as daemon (Default: ", print_var($cfg->get('daemon'), 1), ")\n";
-	print "          --no-daemon      Don't run as daemon\n";
+	print "          --daemon         Start daemon, fork to background\n";
+	print "          --daemon-fg      Start daemon, don't fork to background\n";
 	print "\n";
 	print "          --daemon-impl    Specifies daemon implementation (Default: ", print_var($cfg->get('daemon_impl')), ")\n";
 	print "  -u      --user           Run as specified user. Requires root startup privileges. (Default: ", print_var($cfg->get('user')), ")\n";
@@ -261,8 +264,57 @@ EOF
 	print "OTHER OPTIONS:\n";
 	print "  -l      --list-modules   Prints out list of available ping modules.\n";
 	print "          --doc[=MODULE]   Displays documentation.\n";
+	print "          --readme         Displays readme\n";
+	print "          --changelog      Displays changelog\n";
+	print "          --credits        Display credits\n";
 	print "  -V      --version        Print script version\n";
 	print "  -h      --help           This help message\n";
+	print <<EOF
+
+ENVIRONMENT:
+
+  AA_MONITOR_CONFIG: if set, aa_monitor will automatically try to load
+                     configuration file specified by this env variable.
+                     This is especially usable for CGI mode.
+
+EXAMPLES:
+
+ # command line: filesystem usage check, usage threshold == 50%
+ $MYNAME -e FSUsage usage_threshold=50
+ 
+ # command line: filesystem usage check, with different output formats
+ $MYNAME -e FSUsage output_type=txt
+ $MYNAME -e FSUsage output_type=json
+ $MYNAME -e FSUsage output_type=html
+ $MYNAME -e FSUsage output_type=eval
+ 
+ # command line: filesystem usage check, parameters specified as
+ # JSON string fed via stdin:
+ echo '{ "usage_threshold": 50 }' | $MYNAME -e FSUsage - 
+ 
+ # command line, DNS check with check parameters from file
+ # with some parameters overriden from command line
+ $MYNAME -e DNS /path/fsusage_config.json host=www.example.com timeout=1 
+ 
+ # nagios/icinga compatible check
+ $MYNAME -N FSUsage usage_threshold=50
+ 
+ # nagios/icinga remote check
+ $MYNAME -N ProxyCheck \
+ 	REAL_HOSTPORT=host.example.org:1552 \
+ 	REAL_MODULE=FSUsage \
+ 	USE_SSL=0 \
+ 	usage_threshold=50
+ 
+ # start daemon
+ $MYNAME --daemon
+ 
+ # start daemon without forking to background with different listening port
+ $MYNAME --no-daemon --port 1554
+ 
+ # start fastcgi daemon with custom configuration and don't go to background
+ $MYNAME -c /some/file.conf --protocol fcgi --no-daemon
+EOF
 }
 
 #############################################################
@@ -284,6 +336,8 @@ if (invoked_as_cgi()) {
 	exit 0;
 }
 
+my $args_ok = 0;
+
 # parse command line
 Getopt::Long::Configure('bundling', 'gnu_compat');
 my $r = GetOptions(
@@ -292,13 +346,14 @@ my $r = GetOptions(
 		print $cfg->toString();
 		exit 0;
 	},
-	'e|cmdline' => \ $cmd_line,
-	'N|nagios' => sub { $cmd_line = 1; $nagios = 1 },
+	'e|cmdline' => sub { $args_ok = 1; $cmd_line = 1 },
+	'N|nagios' => sub { $args_ok = 1; $cmd_line = 1; $nagios = 1 },
 	'p|port=i' => sub { $cfg->set('listen_port', $_[1]) },
 	'H|addr=s' => sub { $cfg->set('listen_addr', $_[1]) },
 	'X|protocol=s' => sub { $cfg->set('protocol', $_[1]) },
 	'P|pid-file=s' => sub { $cfg->set('pid_file', $_[1]) },
-	'daemon!' => sub { $cfg->set('daemon', $_[1]) },
+	'daemon' => sub { $args_ok = 1; $cfg->set('daemon', 1) },
+	'daemon-fg' => sub {  $args_ok = 1; $cfg->set('daemon', 0) },
 	'daemon-impl=s' => sub { $cfg->set('daemon_impl', $_[1]) },
 	'u|user=s' => sub { $cfg->set('user', $_[1]) },
 	'g|group=s' => sub { $cfg->set('group', $_[1]) },
@@ -320,7 +375,15 @@ my $r = GetOptions(
 	},
 	'doc:s' => sub {
 		perldoc($_[1]);
-		exit 0;
+	},
+	'readme' => sub {
+		perldoc('P9::README_AA');
+	},
+	'changelog' => sub {
+		perldoc('P9::AA::CHANGELOG');
+	},
+	'credits' => sub {
+		perldoc('P9::AA::CREDITS');
 	},
 	'V|version' => sub {
 		printf("%s %s\n", $MYNAME, $VERSION);
@@ -333,8 +396,13 @@ my $r = GetOptions(
 );
 
 unless ($r) {
-	print STDERR "Invalid command line options. Run $MYNAME --help for help.\n";
-	exit 1;
+	print STDERR "Invalid command line options. Run $MYNAME --help for instructions.\n";
+	exit 255;
+}
+unless ($args_ok) {
+	print STDERR "Invalid command line: Do you want to run $MYNAME in daemon, command line or nagios/icinga mode?\n";
+	print STDERR "Run $MYNAME --help for instructions.\n";
+	exit 255;
 }
 
 # assign log level

@@ -1,4 +1,4 @@
-package P9::AA::Check::AsProxy;
+package P9::AA::Check::ProxyCheck;
 
 use strict;
 use warnings;
@@ -174,7 +174,7 @@ sub getRemoteCheckData {
 	
 	# compute url
 	my $url =
-		(($self->{REAL_SSL}) ? 'https://' : 'http://') .
+		(($self->{USE_SSL}) ? 'https://' : 'http://') .
 		$host_port . $self->{REAL_URI} .
 		$module . '/';
 	
@@ -184,7 +184,7 @@ sub getRemoteCheckData {
 	my $params = {};
 	foreach (keys %{$self}) {
 		next if ($_ =~ m/^_/);
-		next if ($_ =~ m/^REAL_/);
+		next if ($_ =~ m/^(?:REAL_|USE_)/);
 		$params->{$_} = $self->{$_};
 	}
 	

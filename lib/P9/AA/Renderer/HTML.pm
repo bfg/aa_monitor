@@ -63,11 +63,12 @@ sub renderHeader {
 EOF
 ;
  
-	my $h_name = (defined $data->{data}->{module}->{name}) ? encode_entities($data->{data}->{module}->{name}) : '';
-	my $h_to_str = '';
-	if (defined $data->{data}->{check}->{as_string} && length($data->{data}->{check}->{as_string})) {
-		$h_to_str = encode_entities('[' . $data->{data}->{check}->{as_string} . ']');
-	}
+	#my $h_name = (defined $data->{data}->{module}->{name}) ? encode_entities($data->{data}->{module}->{name}) : '';
+	my $h_name = encode_entities($self->renderValTxt($data->{data}->{module}->{name}));
+	my $h_to_str = encode_entities('[' . $self->renderValTxt($data->{data}->{check}->{as_string}) . ']');
+	#if (defined $data->{data}->{check}->{as_string} && length($data->{data}->{check}->{as_string})) {
+	#	$h_to_str = encode_entities('[' . $data->{data}->{check}->{as_string} . ']');
+	#}
 
 	my $h_title = 'Module listing';
 	if (defined $data->{data}->{module}->{name} && defined $data->{data}->{environment}->{hostname}) {
@@ -77,8 +78,8 @@ EOF
 			encode_entities($data->{data}->{environment}->{hostname});
 	}
 
-	my $h_version = $data->{data}->{module}->{version};
-	$h_version = (defined $h_version) ? encode_entities($h_version) : '';
+	my $h_version = encode_entities($self->renderValTxt($data->{data}->{module}->{version}));
+	#$h_version = (defined $h_version) ? encode_entities($h_version) : '';
 	
 	# select background color...
 	my $lgreen = 'ECF8E0';
@@ -305,14 +306,14 @@ EOF
 		$buf .= "\t\t<div class=\"rows\">\n";
 		$buf .= "\t\t\t<div class=\"red kolor\" align=\"center\">ERROR</div>\n";
 		$buf .= "\t\t\t<div class=\"gray kolor\"><pre>\n";
-		$buf .= encode_entities($r->{error_message}) . "</pre>\n";
+		$buf .= encode_entities($self->renderValTxt($r->{error_message})) . "</pre>\n";
 		$buf .= "\t\t</div>\n";		
 	}
 	if ($r->{warning}) {
 		$buf .= "\t\t<div class=\"rows\">\n";
 		$buf .= "\t\t\t<div class=\"orange kolor\" align=\"center\">WARNING</div>\n";
 		$buf .= "\t\t\t<div class=\"gray kolor\"><pre>\n";
-		$buf .= encode_entities($r->{warning_message}) . "</pre>\n";
+		$buf .= encode_entities($self->renderValTxt($r->{warning_message})) . "</pre>\n";
 		$buf .= "\t\t</div>\n";
 	}
 
@@ -338,7 +339,7 @@ sub renderMessages {
 EOF
 ;
 
-	$buf .= encode_entities($data->{data}->{check}->{messages});
+	$buf .= encode_entities($self->renderValTxt($data->{data}->{check}->{messages}));
 
 	# add footer
 	$buf .= <<EOF
@@ -369,10 +370,10 @@ EOF
 		my $c = $data->{data}->{module}->{configuration}->{$key};
 		my $id = $u->newId();
 		
-		my $hkey = encode_entities($key);
-		my $hval = (defined $c->{value}) ? encode_entities($c->{value}) : '';
-		my $hdef = (defined $c->{default}) ? encode_entities($c->{default}) : '';
-		my $hdesc = (defined $c->{description}) ? encode_entities($c->{description}) : '';
+		my $hkey = encode_entities($self->renderValTxt($key));
+		my $hval = encode_entities($self->renderValTxt($c->{value}));
+		my $hdef = encode_entities($self->renderValTxt($c->{default}));
+		my $hdesc = encode_entities($self->renderValTxt($c->{description}));
 		
 		my $len = length($key);
 		my $fill = 30 - $len;
@@ -459,7 +460,7 @@ sub renderHistory {
 	my $result_str = encode_entities(result2str($result));
 	my $msg = '';
 	if ($result != CHECK_OK) {
-		$msg = "\nLast message:        " . encode_entities($data->{data}->{history}->{last_message});
+		$msg = "\nLast message:        " . encode_entities($self->renderValTxt($data->{data}->{history}->{last_message}));
 	}
 
 	my $buf = <<EOF
@@ -485,10 +486,10 @@ EOF
 sub renderGeneralInfo {
 	my ($self, $data) = @_;	
 	my $sw =
-			encode_entities($data->{data}->{environment}->{program_name}) .
+			encode_entities($self->renderValTxt($data->{data}->{environment}->{program_name})) .
 			"/" .
-			encode_entities($data->{data}->{environment}->{program_version});
-	my $host = encode_entities($data->{data}->{environment}->{hostname});
+			encode_entities($self->renderValTxt($data->{data}->{environment}->{program_version}));
+	my $host = encode_entities($self->renderValTxt($data->{data}->{environment}->{hostname}));
 
 	my $buf = <<EOF
 <!-- BEGIN GENERAL INFO -->
@@ -502,7 +503,7 @@ EOF
 		my $u = P9::AA::Util->new();
 		my $base_url = $u->getBaseUrl($self->uri());
 		$base_url = '' if ($base_url eq '/');
-		my $module = $data->{data}->{module}->{name};
+		my $module = $self->renderValTxt($data->{data}->{module}->{name});
 
 		$buf .= '<div class="foot"><center>';
 		$buf .= "[<a href='$base_url/doc/P9/README_AA'>readme</a>] " if (defined $base_url);

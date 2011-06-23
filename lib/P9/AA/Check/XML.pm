@@ -15,7 +15,7 @@ use P9::AA::Constants;
 use P9::AA::Config;
 use base 'P9::AA::Check::URL';
 
-our $VERSION = 0.12;
+our $VERSION = 0.13;
 
 my $xmllint_errs = {
 	0 => "No error",
@@ -129,6 +129,8 @@ in list context.
 
 Returns undef on error.
 
+B<NOTE>: This method supports all keys supported by L<P9::AA::Check::URL/prepareRequest>.
+
 =cut
 sub getXML {
 	my ($self, %opt) = @_;
@@ -145,7 +147,8 @@ sub getXML {
 	}
 	
 	# create xml parser
-	my $p = XML::Simple->new();
+	my $p = $self->getXMLParser();
+	return undef unless (defined $p);
 	
 	# convert string to hash reference
 	my $xml_str = $response->content();
@@ -158,6 +161,18 @@ sub getXML {
 
 	# ok, now it's time to return data
 	return (wantarray ? ($xml_ref, $xml_str) : $xml_ref);
+}
+
+=head2 getXMLParser
+
+ my $parser = $self->getXMLParser();
+ my $struct = $parser->xml_in(\ $string);
+
+Returns initialized and configured L<XML::Parser> object on success, otherwise undef.
+
+=cut
+sub getXMLParser {
+	return XML::Simple->new();
 }
 
 =head2 validateXMLStrict

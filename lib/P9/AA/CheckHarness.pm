@@ -7,16 +7,15 @@ use POSIX qw(strftime);
 use Time::HiRes qw(time);
 use Scalar::Util qw(blessed);
 
-use P9::AA::Constants qw(:all);
-
+use P9::AA::Log;
 use P9::AA::Util;
 use P9::AA::Check;
 use P9::AA::Config;
 use P9::AA::History;
+use P9::AA::Constants qw(:all);
 
-use P9::AA::Log;
+our $VERSION = 0.11;
 
-our $VERSION = 0.10;
 my $log = P9::AA::Log->new();
 my $u = P9::AA::Util->new();
 my $cfg = P9::AA::Config->new();
@@ -143,16 +142,15 @@ sub check {
 	
 	# get check object's hash value
 	my $hashcode = $check->hashCode();
+		
+	# load old history
+	my $hist_old = CLASS_HISTORY->load($hashcode, $cfg->get('var_dir'));
 	
-	# create new history object
-	my $hist_new = CLASS_HISTORY->new();
+	# new history object should be clone of existing history object...
+	my $hist_new = $hist_old->clone();
 	$hist_new->ident($hashcode);
-	
-	# try to load old history
-	my $hist_old = $hist_new->load($hashcode, $cfg->get('var_dir'));
-	# $hist_old->setIdent($hashcode);
 
-	# assign history objects...
+	# assign history objects to check object...
 	$check->historyNew($hist_new);
 	$check->historyOld($hist_old);
 

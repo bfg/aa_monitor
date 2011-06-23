@@ -8,7 +8,7 @@ use POSIX qw(strftime);
 use P9::AA::Constants qw(:all);
 use base 'P9::AA::Renderer';
 
-our $VERSION = 0.12;
+our $VERSION = 0.13;
 
 =head1 NAME
 
@@ -93,7 +93,7 @@ sub renderReport {
 		$buf .= "#        CHECK ERROR         #\n";
 		$buf .= "##############################\n";
 		$buf .= "\n";
-		$buf .= $data->{data}->{check}->{error_message}. "\n";
+		$buf .= $self->renderValTxt($data->{data}->{check}->{error_message}). "\n";
 		$buf .= "\n";
 	}
 
@@ -103,7 +103,7 @@ sub renderReport {
 		$buf .= "#       CHECK WARNING        #\n";
 		$buf .= "##############################\n";
 		$buf .= "\n";
-		$buf .= $data->{data}->{check}->{warning_message}. "\n";
+		$buf .= $self->renderValTxt($data->{data}->{check}->{warning_message}). "\n";
 		$buf .= "\n";
 	}
 
@@ -119,7 +119,7 @@ sub renderMessages {
 		$buf .= "#       CHECK MESSAGES       #\n";
 		$buf .= "##############################\n";
 		$buf .= "\n";
-		$buf .= $data->{data}->{check}->{messages};
+		$buf .= $self->renderValTxt($data->{data}->{check}->{messages});
 		$buf .= "\n";
 	}
 	return $buf;
@@ -139,7 +139,7 @@ sub renderHistory {
 		my $res_str = result2str($res);
 		$buf .= "Last result was: $res_str\n";
 		if ($res != CHECK_OK) {
-			$buf .= "Last message was: " . $data->{data}->{history}->{last_message} . "\n";
+			$buf .= "Last message was: " . $self->renderValTxt($data->{data}->{history}->{last_message}) . "\n";
 		}
 		$buf .= "\n";
 	}
@@ -180,7 +180,7 @@ sub renderConfiguration {
 	foreach my $k (sort keys %{$data->{data}->{module}->{configuration}}) {
 		my $e = $data->{data}->{module}->{configuration}->{$k};
 		next unless (defined $e);
-		$buf .= "$k = " . (defined($e->{value}) ? $e->{value} : '') . "\n";
+		$buf .= "$k = " . $self->renderValTxt($e->{value}) . "\n";
 	}
 	$buf .= "\n";
 
@@ -193,11 +193,12 @@ sub renderGeneralInfo {
 	$buf .= "##############################\n";
 	$buf .= "#       GENERAL INFO         #\n";
 	$buf .= "##############################\n";
-	$buf .= "module: " . $data->{data}->{module}->{name} . '/' . $data->{data}->{module}->{version} . "\n";
-	$buf .= "hostname: " . $data-> {data}->{environment}->{hostname} . "\n";
+	$buf .= "module: " . $self->renderValTxt($data->{data}->{module}->{name}) . '/' .
+		$self->renderValTxt($data->{data}->{module}->{version}) . "\n";
+	$buf .= "hostname: " . $self->renderValTxt($data-> {data}->{environment}->{hostname}) . "\n";
 	$buf .= "software: " .
-			$data-> {data}->{environment}->{program_name} . '/' .
-			$data-> {data}->{environment}->{program_version} . "\n";
+			$self->renderValTxt($data->{data}->{environment}->{program_name}) . '/' .
+			$self->renderValTxt($data->{data}->{environment}->{program_version}) . "\n";
 	$buf .= "\n";
 	return $buf;
 }

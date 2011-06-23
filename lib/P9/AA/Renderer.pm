@@ -3,6 +3,7 @@ package P9::AA::Renderer;
 use strict;
 use warnings;
 
+use Data::Dumper;
 use POSIX qw(strftime);
 use Time::HiRes qw(time);
 use Scalar::Util qw(blessed);
@@ -110,6 +111,18 @@ sub uri {
 	return $self->{_uri};
 }
 
+sub renderValTxt {
+	my ($self, $val) = @_;
+	return '' unless (defined $val);
+	return $val if (ref($val) eq '');
+	
+	my $d = Data::Dumper->new([ $val ]);
+	$d->Terse(1);
+	$d->Indent(1);
+	$d->Varname(0);
+	return $d->Dump();
+}
+
 =head1 SEE ALSO
 
 L<P9::AA::CheckHarness>, 
@@ -117,7 +130,8 @@ L<P9::AA::CheckHarness>,
 L<P9::AA::Renderer::JSON>, 
 L<P9::AA::Renderer::XML>,  
 L<P9::AA::Renderer::HTML>, 
-L<P9::AA::Renderer::PLAIN>
+L<P9::AA::Renderer::PLAIN>, 
+L<P9::AA::Renderer::STORABLE>
 
 =head1 AUTHOR
 

@@ -53,10 +53,8 @@ sub clearParams {
 sub check {
 	my ($self) = @_;
 
-	my @failed_vs = $self->_getFailedVolumeSets($self->{adapter});
-	return undef unless (defined $failed_vs[0]);
-
 	# are there any failed VolumeSets?
+	my @failed_vs = $self->_getFailedVolumeSets($self->{adapter});
 	if (scalar @failed_vs) {
 
 		# do the summary
@@ -121,7 +119,7 @@ sub _getFailedRAIDSets {
 	}
 
 	# build a list of failed RAIDSets
-	my @failed_rs;
+	my @failed_rs = ();
 	foreach my $rs (@$rsd) {
 		unless (exists $rs->{State} and $rs->{State} eq 'Normal') {
 			push(@failed_rs, $rs);
@@ -143,7 +141,7 @@ sub _getFailedVolumeSets {
 	}
 
 	# build a list of failed VolumeSets
-	my @failed_vs;
+	my @failed_vs = ();
 	foreach my $vs (@$vsd) {
 		unless (exists $vs->{State} and $vs->{State} eq 'Normal') {
 			push(@failed_vs, $vs);

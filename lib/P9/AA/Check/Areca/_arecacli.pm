@@ -23,23 +23,25 @@ the Planet9 Linux distribution.
 
 =head2 getAdapterData
 
- my $data = $self->getAdapterData();
+ my $data = $self->getAdapterData($adapter);
 
 Returns hash reference containing adapter data on success, otherwise undef.
+$adapter is the adapter number to look at, defaults to 1 if not defined.
 
 =cut
 sub getAdapterData {
-	my ($self) = @_;
-	my ($data, $exit_code) = $self->_runCli('sys info');
+	my ($self, $adapter) = @_;
+	my ($data, $exit_code) = $self->_runCli('sys info', $adapter);
 	return undef if ($exit_code);
 	return $self->_parseAdapterData($data);
 }
 
 =head2 getDiskData
 
- my $data = $self->getDiskData();
+ my $data = $self->getDiskData($adapter);
 
 Returns hash reference containing disk data on success, otherwise undef.
+$adapter is the adapter number to look at, defaults to 1 if not defined.
 
 =cut
 sub getDiskData {
@@ -51,9 +53,10 @@ sub getDiskData {
 
 =head2 getVolumeSetData
 
- my $data = $self->getVolumeSetData();
+ my $data = $self->getVolumeSetData($adapter);
 
 Returns hash reference containing volume set data on success, otherwise undef.
+$adapter is the adapter number to look at, defaults to 1 if not defined.
 
 =cut
 sub getVolumeSetData {
@@ -65,9 +68,10 @@ sub getVolumeSetData {
 
 =head2 getRAIDSetData
 
- my $data = $self->getRAIDSetData();
+ my $data = $self->getRAIDSetData($adapter);
 
 Returns hash reference containing RAID set data on success, otherwise undef.
+$adapter is the adapter number to look at, defaults to 1 if not defined.
 
 =cut
 sub getRAIDSetData {
@@ -77,6 +81,33 @@ sub getRAIDSetData {
 	return $self->_parseRAIDSetData($data);
 }
 
+=head2 setIdLight
+
+ my $data = $self->setIdLight($id, $password, $adapter);
+
+Blink the identify-light given by the index $id on the designated $adapter.
+To actually do this this, password given by $password must be set. Turn the
+blinking off with $id == 0.
+
+=cut
+sub setIdLight {
+	my ($self, $id, $password, $adapter) = @_;
+	return undef unless (defined $id and defined $password);
+
+	my ($out, $exit_code);
+
+	# set adapter
+	($out, $exit_code) = $self->_runCli('rsf info', $adapter);
+	return undef if ($exit_code);
+
+	# set password
+	return undef unless ($self->_setPassword($password));	
+
+	# run the cli
+	($out, $exit_code) = $self->_runCli("disk identify drv=$id", $adapter);
+	return $exit_code ? 0 : 1;
+}
+
 sub VERSION {
 	return $VERSION;
 }
@@ -84,6 +115,14 @@ sub VERSION {
 ##################################################
 #              PRIVATE METHODS                   #
 ##################################################
+=head2 _runCommand
+
+ my ($out, $retval) = $self->_runCommand($cmd);
+
+Runs the specified system command ($cmd). Returns an array ($out, $retval); 
+$out is the STDOUT of the command, $ret is the command's return value.
+
+=cut
 sub _runCommand {
 	my ($self, $cmd) = @_;
 	unless ($cmd) {
@@ -114,6 +153,13 @@ sub _runCommand {
 	return ($out, $retval);	
 }
 
+=head2 _runCommand
+
+ self->_debug($msg);
+
+Spew out some debug message if we are in debug mode.
+
+=cut
 sub _debug {
 	my ($self, $msg) = @_;
 	if ($self->{debug}) {
@@ -125,15 +171,25 @@ sub _setCurrentAdapter {
 	my ($self, $adapter) = @_;
 
 	# set default adapter (1)
-	$adapter = (defined $adapter) ? $adapter : 1;
+	$adapter = (defined $adapter ? $adapter : 1);
+	$self->_debug("Setting current adapter to: $adapter");
 
 	# run the Areca cli
 	my $run = RAID_CMD . " 'set curctrl=$adapter'";
 	my ($out, $exit_code) = $self->_runCommand($run);
 
-	return ($exit_code ? 0 : 1);
+	return $exit_code ? 0 : 1;
 }
 
+=head2 _runCli
+
+ my ($out, $retval) = $self->_runCli($command, $adapter);
+
+Runs the Areca command ($command) on the Areca adapter ($adapter). Returns 
+an array ($out, $retval); $out is the STDOUT of the areca-cli command, 
+$ret is its return value.
+
+=cut
 sub _runCli {
 	my ($self, $command, $adapter) = @_;
 
@@ -147,6 +203,14 @@ sub _runCli {
 	return ($self->_runCommand($run));
 }
 
+=head2 _parseRAIDSetData
+
+ my ($rsd) = $self->_parseRAIDSetData($data);
+
+Parses the scalar data ($data) into a hash ($rsd). $data is supposed to be
+the output given by the Areca's 'rsf info' command.
+
+=cut
 sub _parseRAIDSetData {
 	my ($self, $data) = @_;
 	
@@ -193,6 +257,14 @@ sub _parseRAIDSetData {
 	return $rsd;
 }
 
+=head2 _parseVolumeSetData
+
+ my ($vsd) = $self->_parseVolumeSetData($data);
+
+Parses the scalar data ($data) into a hash ($vsd). $data is supposed to be
+the output given by the Areca's 'vsf info' command.
+
+=cut
 sub _parseVolumeSetData {
 	my ($self, $data) = @_;
 	
@@ -239,6 +311,14 @@ sub _parseVolumeSetData {
 	return $vsd;
 }
 
+=head2 _parseDiskData
+
+ my ($vsd) = $self->_parseDiskData($data);
+
+Parses the scalar data ($data) into a hash ($vsd). $data is supposed to be
+the output given by the Areca's 'disk info' command.
+
+=cut
 sub _parseDiskData {
 	my ($self, $data) = @_;
 	
@@ -281,6 +361,14 @@ sub _parseDiskData {
 	return $dd;
 }
 
+=head2 _parseAdapterData
+
+ my ($ad) = $self->_parseAdapterData($data);
+
+Parses the scalar data ($data) into a hash ($ad). $data is supposed to be
+the output given by the Areca's 'system info' command.
+
+=cut
 sub _parseAdapterData {
 	my ($self, $data) = @_;
 	
@@ -321,6 +409,21 @@ sub _parseAdapterData {
 		};
 	}
 	return $ad;
+}
+
+=head2 _setPassword
+
+ my ($success) = $self->_setPassword($password, $adapter);
+
+Sets the password ($password) for the Areca adapter ($adapter). Returns true
+if successful, false on fail, and undef if an error occured.
+
+=cut
+sub _setPassword {
+	my ($self, $password, $adapter) = @_;
+	return undef unless (defined $password);
+	my ($data, $exit_code) = $self->_runCli("set password=$password", $adapter);
+	return $exit_code ? 0 : 1;
 }
 
 =head1 SEE ALSO

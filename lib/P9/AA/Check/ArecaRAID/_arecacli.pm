@@ -8,7 +8,7 @@ use POSIX qw(getcwd);
 
 use base 'P9::AA::Check::ArecaRAID';
 
-use constant RAID_CMD => 'areca-cli';
+my @RAID_CMD = qw/ areca-cli cli64 cli32 /;
 
 our $VERSION = 0.01;
 
@@ -176,10 +176,24 @@ sub _setCurrentAdapter {
 	$self->_debug("Setting current adapter to: $adapter");
 
 	# run the Areca cli
-	my $run = RAID_CMD . " 'set curctrl=$adapter'";
+	my $cli = $self->_getArecaCli();
+	return undef unless defined($cli);
+
+	my $run = $cli . " 'set curctrl=$adapter'";
 	my ($out, $exit_code) = $self->_runCommand($run);
 
 	return $exit_code ? 0 : 1;
+}
+
+sub _getArecaCli {
+	my ($self) = @_;
+
+	my $cli;
+	foreach my $cmd (@RAID_CMD) {
+		$cli = $self->which($cmd);
+		last if (defined $cli);
+	}
+	return $cli;
 }
 
 =head2 _runCli
@@ -200,7 +214,10 @@ sub _runCli {
 		return undef;
 	}
 
-	my $run = RAID_CMD . " '$command'";
+	my $cli = $self->_getArecaCli();
+	return undef unless defined($cli);
+
+	my $run = $cli . " '$command'";
 	return ($self->_runCommand($run));
 }
 

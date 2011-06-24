@@ -766,6 +766,16 @@ sub qx2 {
 	return (wantarray ? ($r, $ec) : $r);
 }
 
+=head2 which
+
+Shorcut method for L<P9::AA::Util#which>
+
+=cut
+sub which {
+	my $self = shift;
+	return $u->which(@_);
+}
+
 =head1 PERSISTENT DATA METHODS
 
 Check object has ability to persistently store data between checks if

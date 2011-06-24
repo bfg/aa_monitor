@@ -57,7 +57,7 @@ sub check {
 	return undef unless (defined $failed_vs);
 
 	# are there any failed VolumeSets?
-	if (scalar @$failed_vs) {
+	if (@{$failed_vs}) {
 		# do the summary
 		$self->error(
 			scalar @$failed_vs . 

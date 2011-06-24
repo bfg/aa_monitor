@@ -131,15 +131,10 @@ sub toString {
 	return $str
 }
 
-=head2 _getFailedRAIDSets
-
- my $failed_rs = $self->_getFailedRAIDSets($adapter);
-
-Get a listref of failed RAIDSets. $failed_rs contains an empty list if
-everything is OK, or an undef if an error happened.
-
-=cut
-
+# my $failed_rs = $self->_getFailedRAIDSets($adapter);
+#
+#Get a listref of failed RAIDSets. $failed_rs contains an empty list if
+#everything is OK, or an undef if an error happened.
 sub _getFailedRAIDSets {
 	my ($self, $adapter) = @_;
 
@@ -161,15 +156,11 @@ sub _getFailedRAIDSets {
 	return $failed_rs;
 }
 
-=head2 _getFailedVolumeSets
 
- my $failed_rs = $self->_getFailedVolumeSets($adapter);
-
-Get a listref of failed VolumeSets. $failed_rs contains an empty list if
-everything is OK, or an undef if an error happened.
-
-=cut
-
+# my $failed_rs = $self->_getFailedVolumeSets($adapter);
+#
+#Get a listref of failed VolumeSets. $failed_rs contains an empty list if
+#everything is OK, or an undef if an error happened.
 sub _getFailedVolumeSets {
 	my ($self, $adapter) = @_;
 

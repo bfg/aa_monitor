@@ -10,6 +10,8 @@ aa_monitor changelog
 
 =item * new module L<B<ArecaRAID>|P9:AA::Check::ArecaRAID> - L<Areca|http://www.areca.com.tw> hardware RAID checking module
 
+=back
+
 =head2 1.1.0
 
 =over

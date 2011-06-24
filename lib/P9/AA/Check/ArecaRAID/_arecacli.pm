@@ -62,7 +62,7 @@ $adapter is the adapter number to look at, defaults to 1 if not defined.
 sub getVolumeSetData {
 	my ($self, $adapter) = @_;
 	my ($data, $exit_code) = $self->_runCli('vsf info', $adapter);
-	return undef if ($exit_code);
+	return undef if (! defined $data || $exit_code);
 	return $self->_parseVolumeSetData($data);
 }
 
@@ -182,18 +182,17 @@ sub _setCurrentAdapter {
 	my $run = $cli . " 'set curctrl=$adapter'";
 	my ($out, $exit_code) = $self->_runCommand($run);
 
-	return $exit_code ? 0 : 1;
+	return (! defined $out || $exit_code) ? 0 : 1;
 }
 
 sub _getArecaCli {
 	my ($self) = @_;
-
-	my $cli;
-	foreach my $cmd (@RAID_CMD) {
-		$cli = $self->which($cmd);
-		last if (defined $cli);
+	foreach (@RAID_CMD) {
+		my $cli = $self->which($_);
+		return $cli if (defined $cli);
 	}
-	return $cli;
+	$self->error("Areca CLI utility (" . join(", ", @RAID_CMD) . ") not found on system.");
+	return undef;
 }
 
 =head2 _runCli
@@ -210,7 +209,7 @@ sub _runCli {
 
 	# set proper Areca adapter
 	unless ($self->_setCurrentAdapter($adapter)) {
-		$self->error("Could not set adapter '$adapter'.");
+		$self->error("Could not set adapter '$adapter': " . $self->error());
 		return undef;
 	}
 

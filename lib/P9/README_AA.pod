@@ -359,6 +359,8 @@ header. Currenty only B<(application|text)/(json|xml)> are supported.
 
 =item L<ApacheSolr|P9::AA::Check::ApacheSolr>
 
+=item L<ArecaRAID|P9::AA::Check::ArecaRAID>
+
 =item L<CertificateDB|P9::AA::Check::CertificateDB>
 
 =item L<DBI|P9::AA::Check::DBI>

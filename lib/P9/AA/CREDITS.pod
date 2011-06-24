@@ -32,7 +32,7 @@ Used for safe command parsing in L<P9::AA::Util/qx2>.
  
  * Text::ParseWords 3.27 by Alexandr Ciornii
    http://search.cpan.org/~chorny/Text-ParseWords-3.27/ParseWords.pm
-   License: Perl (Artistic and GPL)
+  License: Perl (Artistic and GPL)
 
 =head2 Plack::Handler::FCGI::PP
 
@@ -77,6 +77,7 @@ Uros has created or contributed to the following modules:
  * Process
  * MySQLNDBUsage
  * KIS
+ * Areca
 
 =head2 Tilen Kodba Ceh
 

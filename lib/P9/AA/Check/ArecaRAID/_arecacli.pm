@@ -1,4 +1,4 @@
-package P9::AA::Check::Areca::_arecacli;
+package P9::AA::Check::ArecaRAID::_arecacli;
 
 use strict;
 use warnings;
@@ -6,7 +6,7 @@ use warnings;
 use File::Spec;
 use POSIX qw(getcwd);
 
-use base 'P9::AA::Check::Areca';
+use base 'P9::AA::Check::ArecaRAID';
 
 use constant RAID_CMD => 'areca-cli';
 
@@ -14,7 +14,7 @@ our $VERSION = 0.01;
 
 =head1 NAME
 
-Implementation of L<P9::AA::Check::Areca> module based
+Implementation of L<P9::AA::Check::ArecaRAID> module based
 on Areca's cli32/cli64 command-line utility. Note that 
 the cli32/cli64 utility is renamed to alreca-cli in 
 the Planet9 Linux distribution. 
@@ -116,6 +116,7 @@ sub VERSION {
 #              PRIVATE METHODS                   #
 ##################################################
 =head2 _runCommand
+
 
  my ($out, $retval) = $self->_runCommand($cmd);
 
@@ -428,7 +429,7 @@ sub _setPassword {
 
 =head1 SEE ALSO
 
-L<P9::AA::Check::Areca>
+L<P9::AA::Check::ArecaRAID>
 
 =head1 AUTHOR
 

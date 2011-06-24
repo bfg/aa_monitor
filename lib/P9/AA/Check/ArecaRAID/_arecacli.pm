@@ -115,15 +115,10 @@ sub VERSION {
 ##################################################
 #              PRIVATE METHODS                   #
 ##################################################
-=head2 _runCommand
-
-
- my ($out, $retval) = $self->_runCommand($cmd);
-
-Runs the specified system command ($cmd). Returns an array ($out, $retval); 
-$out is the STDOUT of the command, $ret is the command's return value.
-
-=cut
+# my ($out, $retval) = $self->_runCommand($cmd);
+#
+#Runs the specified system command ($cmd). Returns an array ($out, $retval); 
+#$out is the STDOUT of the command, $ret is the command's return value.
 sub _runCommand {
 	my ($self, $cmd) = @_;
 	unless ($cmd) {
@@ -154,13 +149,9 @@ sub _runCommand {
 	return ($out, $retval);	
 }
 
-=head2 _runCommand
-
- self->_debug($msg);
-
-Spew out some debug message if we are in debug mode.
-
-=cut
+# self->_debug($msg);
+#
+#Spew out some debug message if we are in debug mode.
 sub _debug {
 	my ($self, $msg) = @_;
 	if ($self->{debug}) {
@@ -195,15 +186,11 @@ sub _getArecaCli {
 	return undef;
 }
 
-=head2 _runCli
-
- my ($out, $retval) = $self->_runCli($command, $adapter);
-
-Runs the Areca command ($command) on the Areca adapter ($adapter). Returns 
-an array ($out, $retval); $out is the STDOUT of the areca-cli command, 
-$ret is its return value.
-
-=cut
+# my ($out, $retval) = $self->_runCli($command, $adapter);
+#
+#Runs the Areca command ($command) on the Areca adapter ($adapter). Returns 
+#an array ($out, $retval); $out is the STDOUT of the areca-cli command, 
+#$ret is its return value.
 sub _runCli {
 	my ($self, $command, $adapter) = @_;
 
@@ -220,14 +207,10 @@ sub _runCli {
 	return ($self->_runCommand($run));
 }
 
-=head2 _parseRAIDSetData
-
- my ($rsd) = $self->_parseRAIDSetData($data);
-
-Parses the scalar data ($data) into a hash ($rsd). $data is supposed to be
-the output given by the Areca's 'rsf info' command.
-
-=cut
+# my ($rsd) = $self->_parseRAIDSetData($data);
+#
+#Parses the scalar data ($data) into a hash ($rsd). $data is supposed to be
+#the output given by the Areca's 'rsf info' command.
 sub _parseRAIDSetData {
 	my ($self, $data) = @_;
 	
@@ -274,14 +257,10 @@ sub _parseRAIDSetData {
 	return $rsd;
 }
 
-=head2 _parseVolumeSetData
-
- my ($vsd) = $self->_parseVolumeSetData($data);
-
-Parses the scalar data ($data) into a hash ($vsd). $data is supposed to be
-the output given by the Areca's 'vsf info' command.
-
-=cut
+# my ($vsd) = $self->_parseVolumeSetData($data);
+#
+#Parses the scalar data ($data) into a hash ($vsd). $data is supposed to be
+#the output given by the Areca's 'vsf info' command.
 sub _parseVolumeSetData {
 	my ($self, $data) = @_;
 	
@@ -328,14 +307,10 @@ sub _parseVolumeSetData {
 	return $vsd;
 }
 
-=head2 _parseDiskData
-
- my ($vsd) = $self->_parseDiskData($data);
-
-Parses the scalar data ($data) into a hash ($vsd). $data is supposed to be
-the output given by the Areca's 'disk info' command.
-
-=cut
+# my ($vsd) = $self->_parseDiskData($data);
+#
+#Parses the scalar data ($data) into a hash ($vsd). $data is supposed to be
+#the output given by the Areca's 'disk info' command.
 sub _parseDiskData {
 	my ($self, $data) = @_;
 	
@@ -378,14 +353,10 @@ sub _parseDiskData {
 	return $dd;
 }
 
-=head2 _parseAdapterData
-
- my ($ad) = $self->_parseAdapterData($data);
-
-Parses the scalar data ($data) into a hash ($ad). $data is supposed to be
-the output given by the Areca's 'system info' command.
-
-=cut
+# my ($ad) = $self->_parseAdapterData($data);
+#
+#Parses the scalar data ($data) into a hash ($ad). $data is supposed to be
+#the output given by the Areca's 'system info' command.
 sub _parseAdapterData {
 	my ($self, $data) = @_;
 	
@@ -428,14 +399,10 @@ sub _parseAdapterData {
 	return $ad;
 }
 
-=head2 _setPassword
-
- my ($success) = $self->_setPassword($password, $adapter);
-
-Sets the password ($password) for the Areca adapter ($adapter). Returns true
-if successful, false on fail, and undef if an error occured.
-
-=cut
+# my ($success) = $self->_setPassword($password, $adapter);
+#
+#Sets the password ($password) for the Areca adapter ($adapter). Returns true
+#if successful, false on fail, and undef if an error occured.
 sub _setPassword {
 	my ($self, $password, $adapter) = @_;
 	return undef unless (defined $password);

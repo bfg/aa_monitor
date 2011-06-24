@@ -10,7 +10,7 @@ use base 'P9::AA::Check::ArecaRAID::_arecacli';
 
 =head1 NAME
 
-Linux implementation of L<P9::AA::Check::ArecaRAID::_arecacli> module.
+Linux implementation of L<P9::AA::Check::ArecaRAID> module based on L<P9::AA::Check::ArecaRAID::_arecacli>.
 
 =head1 DESCRIPTION
 

@@ -6,7 +6,7 @@ use warnings;
 use P9::AA::Constants;
 use base 'P9::AA::Check::URL';
 
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 
 # haproxy CSV stats item order...
 my @_order = qw(
@@ -139,7 +139,13 @@ sub check {
 		# check all backend nodes
 		foreach my $node (sort keys %{$be->{nodes}}) {
 			my $n = $be->{nodes}->{$node};
+			next unless (exists($n->{status}) && defined($n->{status}));
 			my $status = uc($n->{status});
+			
+			# haproxy 1.5.x stats interfaces can also contain
+			# frontend data in "backend" sections; just ignore it...
+			next if ($status eq 'OPEN');
+			
 			unless ($status eq 'UP') {
 				my $str = "FARM $name, NODE $node is not in OK state: $status";
 				# check problem?

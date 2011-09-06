@@ -310,10 +310,10 @@ EXAMPLES:
  $MYNAME --daemon
  
  # start daemon without forking to background with different listening port
- $MYNAME --no-daemon --port 1554
+ $MYNAME --daemon-fg --port 1554
  
  # start fastcgi daemon with custom configuration and don't go to background
- $MYNAME -c /some/file.conf --protocol fcgi --no-daemon
+ $MYNAME -c /some/file.conf --protocol fcgi --daemon-fg
 EOF
 }
 

@@ -13,7 +13,7 @@ use Scalar::Util qw(blessed);
 use P9::AA::Constants;
 use base 'P9::AA::Check::_Socket';
 
-our $VERSION = 0.17;
+our $VERSION = 0.18;
 
 =head1 NAME
 
@@ -387,7 +387,7 @@ sub httpGet {
 		url => $url,
 		request_method => 'GET',
 	);
-	
+	return undef unless (defined $req);
 	return $self->httpRequest($req);
 }
 

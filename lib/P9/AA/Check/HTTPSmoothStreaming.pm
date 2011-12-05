@@ -401,6 +401,8 @@ sub _checkUrl {
 
 =item L<P9::AA::Check>
 
+=item L<Smooth Streaming Protocol Specification|http://download.microsoft.com/download/B/0/B/B0B199DB-41E6-400F-90CD-C350D0C14A53/[MS-SSTR].pdf>
+
 =item L<IIS smooth streaming README|http://learn.iis.net/page.aspx/1046/iis-media-services-readme/>
 
 =item L<Nginx smooth streaming module|http://h264.code-shop.com/trac/wiki/Mod-Smooth-Streaming-Nginx-Version1>

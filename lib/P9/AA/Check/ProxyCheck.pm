@@ -6,7 +6,7 @@ use warnings;
 use P9::AA::Constants;
 use base 'P9::AA::Check::JSON';
 
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 
 =head1 NAME
 
@@ -32,7 +32,7 @@ sub clearParams {
 
 	# set module description
 	$self->setDescription(
-		"Execute check on another agent."
+		"Execute check on another aa_monitor agent."
 	);
 
 	$self->cfgParamRemove(qr/^header[\w\-]+/);
@@ -154,6 +154,12 @@ sub getRemoteCheckData {
 	
 	my $module = $self->{REAL_MODULE};
 	my $host_port = $self->{REAL_HOSTPORT};
+
+	# no :port? append default port...
+	unless ($host_port =~ m/:\d+$/) {
+		$host_port .= ':1552';
+	}
+
 	{
 		no warnings;
 		$module =~ s/[^\w]+//g;

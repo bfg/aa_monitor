@@ -16,26 +16,38 @@ use constant MAX_LINES => 500;
 our $VERSION = 0.19;
 
 my $log = P9::AA::Log->new();
-my @_cfg_files = (
-	realpath(
-		File::Spec->catfile(
-			$FindBin::Bin,
-			'..',
-			'conf',
-			'aa_monitor.conf'
-		)
-	),
-	realpath(
-		File::Spec->catfile(
-			$FindBin::Bin,
-			'..',
-			'etc',
-			'aa_monitor.conf'
-		)
-	),
+my @_cfg_files = ();
+
+for my $dir ('conf', 'etc') {
+  my $f = File::Spec->catfile(
+    $FindBin::RealBin,
+    '..',
+    'conf',
+    'aa_monitor.conf'
+  );
+  if (1 || -e $f || $^O !~ m/^(?:win|os2)/i) {
+    local $@;
+    my $f = eval { Cwd::abs_path($f) };
+    # $f = $x if (defined $x);
+  }
+  push(@_cfg_files, $f);
+}
+
+# winblowz?
+if ($^O =~ m/^win/i || $^O =~ m/^os2/i) {
+  for my $dir ('aa_monitor',) {
+    for my $sd ('conf', 'etc') {
+      my $f = File::Spec->catfile($dir, 'aa_monitor', $sd, 'aa_monitor.conf');
+      push(@_cfg_files, $f);
+    }
+  }
+} else {
+  push(
+    @_cfg_files,
 	'/etc/aa_monitor/aa_monitor.conf',
-	'/usr/local/etc/aa_monitor/aa_monitor.conf'
-);
+	'/usr/local/etc/aa_monitor/aa_monitor.conf',
+  );
+}
 
 my $_obj = undef;
 

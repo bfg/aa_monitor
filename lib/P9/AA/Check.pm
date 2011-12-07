@@ -188,6 +188,7 @@ Appends string $msg to internal message buffer.
 =cut
 sub bufApp {
 	my $self = shift;
+	no warnings;
 	my $str = (@_) ? join('', @_) : '';
 	$str =~ s/[\r\n]+$//gm;
 	$self->{_msgbuf} .= $str . "\n";

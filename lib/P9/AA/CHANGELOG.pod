@@ -4,6 +4,18 @@ aa_monitor changelog
 
 =head1 VERSIONS
 
+=head2 1.1.2
+
+=over
+
+=item * new module L<B<HTTPSmoothStreaming>|P9::AA::Check::HTTPSmoothStreaming>
+
+=item * new module L<B<HTTPLiveStreaming>|P9::AA::Check::HTTPLiveStreaming>
+
+=item * Added Win32, OS/2 support to L<P9::AA::Config>
+
+=back
+
 =head2 1.1.1
 
 =over

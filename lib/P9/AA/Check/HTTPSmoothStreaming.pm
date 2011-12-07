@@ -5,6 +5,7 @@ use warnings;
 
 use Encode;
 use XML::Parser;
+use Time::HiRes qw(time);
 use File::Temp qw(tempfile);
 
 use P9::AA::Constants;
@@ -352,7 +353,6 @@ sub _checkUrl {
   my $ua = $self->getUa();
 
   # time to download some stuff...
-  use Time::HiRes qw(time);
   my $ts = time();
   
   my $r = $ua->get(

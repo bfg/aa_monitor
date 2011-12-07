@@ -126,6 +126,7 @@ sub error {
 	my ($package, $filename, $line) = caller;
 	my $me = __PACKAGE__;
 	if (@_ && $package =~ m/^$me/) {
+		no warnings;
 		$self->{_error} = join('', @_);
 		return CHECK_ERR;
 	}

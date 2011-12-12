@@ -6,7 +6,7 @@ use warnings;
 use P9::AA::Constants;
 use base 'P9::AA::Check::_Socket';
 
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 
 =head1 NAME
 
@@ -224,6 +224,9 @@ sub rtspConnect {
 		return undef;
 	}
 	
+	# send OPTIONS command first...
+	my $r = $rtsp->command("OPTIONS *");
+	
 	return $rtsp;
 }
 
@@ -286,7 +289,7 @@ sub new {
 	my $self = {
 		_socket => undef,
 		_error => '',
-		_seq => 1,
+		_seq => 0,
 		_session => undef,
 		_uri => undef,
 		_host => undef,
@@ -376,6 +379,8 @@ sub command {
 	
 	$self->{_seq}++;
 	print "" if ($self->{_debug});
+	
+	$self->{_last_cmd} = $cmd;
 
 	$self->_print_s($s, $cmd . " RTSP/1.0" . CRLF);
 	$self->_print_s($s, "CSeq: $self->{_seq}" . CRLF);
@@ -450,7 +455,12 @@ sub _response {
 	# read body...
 	read($s, $data->{body}, $ct) if ($ct > 0);
 	unless ($ok) {
-		$self->_error("Bad RTSP response: $data->{code} $data->{status}");
+	    my $sock_connected = (defined $s && blessed($s) && $s->can('connected') && $s->connected()) ? 1 : 0;
+		unless (defined $data->{code} && $data->{code} >= 200 && $data->{code} < 400) {
+		  $data->{code} = 595;
+		  $data->{status} = "Unable to parse RTSP response, read " . length($data->{body}) . " bytes.";
+		}
+		$self->_error("Bad RTSP response (connected: $sock_connected) [cmd: $self->{_last_cmd}]: $data->{code} $data->{status}");
 	}
 	
 	return ($ok, $data);

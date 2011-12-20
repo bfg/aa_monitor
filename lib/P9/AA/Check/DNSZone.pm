@@ -8,7 +8,7 @@ use Scalar::Util qw(blessed);
 use P9::AA::Constants;
 use base 'P9::AA::Check::DNS';
 
-our $VERSION = 0.20;
+our $VERSION = 0.21;
 
 =head1 NAME
 
@@ -28,8 +28,8 @@ sub clearParams {
 	$self->cfgParamAdd(
 		'zone',
 		undef,
-		'Zone name. Example: example.org',
-		$self->validate_str(500),
+		'Comma separated list of one or more zone names. Example: example.org,example2.org',
+		$self->validate_str(16 * 1024),
 	);
 
 	$self->cfgParamRemove('host');
@@ -42,31 +42,59 @@ sub clearParams {
 sub toString {
 	my $self = shift;
 	no warnings;
-	return $self->{zone} . '@' . $self->{nameserver};
+	return 
+	 join(",", $self->_peer_list($self->{zone})) . '@' . $self->{nameserver};
 }
 
 sub check {
-	my ($self) = @_;	
-	unless (defined $self->{zone} && length($self->{zone}) > 0) {
-		return $self->error("DNS zone is not set.");
-	}
-
-	# create resolver object
-	my $res = $self->getResolver();
-	return CHECK_ERR unless (defined $res);
+  my ($self) = @_;	
+  unless (defined $self->{zone} && length($self->{zone}) > 0) {
+    return $self->error("DNS zone is not set.");
+  }
 	
-	# get zone data...
-	my $z = $self->zoneAXFR($self->{zone}, undef, $self->{class});
-	return CHECK_ERR unless (defined $z);
-	
-	# get soa
-	my $soa = $z->[0];
-	$self->bufApp("Zone $self->{zone} SOA:");
-	$self->bufApp($soa->string());
-	$self->bufApp("Zone contains " . ($#{$z} + 1) . " records.");
+  # get zones...
+  my @zones = $self->_peer_list($self->{zone});
+  unless (@zones) {
+    no warnings;
+    return $self->error("No DNS zone names can be parsed from string '$self->{zone}'");
+  }
 
-	# return success...
-	return CHECK_OK;
+  # create resolver object
+  my $res = $self->getResolver();
+  return CHECK_ERR unless (defined $res);
+	
+  my $r = CHECK_OK;
+  my $err = '';
+  my $warn = '';
+	
+  # check all zones...
+  my $i = 0;
+  foreach my $zone (@zones) {
+    $i++;    
+
+    # get zone data...
+    my $z = $self->zoneAXFR($zone, undef, $self->{class});
+    unless (defined $z) {
+      $err .= $self->error() . "\n";
+      $r = CHECK_ERR;
+      next;
+    }
+
+    # get soa
+    my $soa = $z->[0];
+    $self->bufApp("Zone $zone [" . ($#{$z} + 1) . " record(s)]:");
+    $self->bufApp($soa->string());
+    $self->bufApp();
+  }
+  
+  if ($r != CHECK_OK) {
+    $err =~ s/\s+$//g;
+    $warn =~ s/\s+$//g;
+    $self->warning($warn);
+    $self->error($err);
+  }
+
+  return $r;
 }
 
 =head1 SEE ALSO

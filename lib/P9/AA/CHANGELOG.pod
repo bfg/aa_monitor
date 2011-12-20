@@ -12,6 +12,12 @@ aa_monitor changelog
 
 =item * new module L<B<HTTPLiveStreaming>|P9::AA::Check::HTTPLiveStreaming>
 
+=item * module L<B<DNS>|P9::AA::Check::DNS> and all it's derived modules now support new parameters:
+B<debug_dns>, B<srcaddr>, B<srcport>.
+
+=item * modules L<B<DNSZone>|P9::AA::Check::DNSZone> and L<B<DNSZoneConsistency>|P9::AA::Check::DNSZoneConsistency> now
+accept comma separated list of zone names in B<zone> parameter. 
+
 =item * Added Win32, OS/2 support to L<P9::AA::Config>
 
 =back

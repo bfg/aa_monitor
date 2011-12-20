@@ -8,7 +8,7 @@ use Scalar::Util qw(blessed);
 use P9::AA::Constants;
 use base 'P9::AA::Check::DNSZone';
 
-our $VERSION = 0.13;
+our $VERSION = 0.14;
 
 =head1 NAME
 
@@ -40,8 +40,9 @@ sub clearParams {
 sub toString {
 	my $self = shift;
 	no warnings;
-	return $self->{zone} .
-		' ' . $self->{nameserver} .
+	return 
+		join(",", $self->_peer_list($self->{zone})) .
+		' @ ' . $self->{nameserver} .
 		' <=> ' .
 		join(",", $self->_peer_list($self->{nameserver_peers})) .
 		' / ' . $self->{class};
@@ -58,59 +59,45 @@ sub check {
 		return $self->error("DNS nameserver peer hosts are not set.");
 	}
 	
-	# get referential zone...
-	my $zone_ref = $self->zoneTransfer($self->{zone}, $self->{nameserver});
-	return CHECK_ERR unless (defined $zone_ref);
+  # get zones...
+  my @zones = $self->_peer_list($self->{zone});
+  unless (@zones) {
+    no warnings;
+    return $self->error("No DNS zone names can be parsed from string '$self->{zone}'");
+  }
+
+  my $r = CHECK_OK;
+  my $err = '';
+  my $warn = '';
 	
-	my $soa = $zone_ref->[0];
-	my $serial = (blessed($soa) && $soa->isa('Net::DNS::RR::SOA')) ?
-		$soa->serial() :
-		'';
-	
-	$self->bufApp(
-		"Referential DNS server $self->{nameserver} zone contains " .
-		($#{$zone_ref} + 1) . " records [serial: $serial]."
-	);
-	
-	# compare nameserver results...
-	my $cmp = {};
-	
-	# transfer zones from all nameserver peers
-	foreach my $ns (@peers) {
-		my $z = $self->zoneTransfer($self->{zone}, $ns);
-		$cmp->{$ns} = [ $z, $self->error() ];
-	}
-	
-	my $warn = '';
-	my $err = '';
-	my $result = CHECK_OK;
-	
-	foreach my $ns (keys %{$cmp}) {
-		my $z = $cmp->{$ns}->[0];
-		my $e = $cmp->{$ns}->[1];
-		# no zone, no fun...
-		unless (defined $z) {
-			$err = "Nameserver $ns: " . $e . "\n";
-			$result = CHECK_ERR;
-			next;
-		}
-		
-		$self->bufApp("Peer nameserver $ns: zone contains " . ($#{$z} + 1) . " records.");
-		
-		# compare zone data
-		unless ($self->compareZone($zone_ref, $z)) {
-			$err = $self->error() . "\n";
-			$result = CHECK_ERR;
-			next;
-		}
-	}
-	
-	unless ($result == CHECK_OK) {
-		$err =~ s/\s+$//g;
-		$self->error($err);
-	}
-	
-	return $result;
+  # check all zones...
+  my $i = 0;
+  foreach my $zone (@zones) {
+    $i++;    
+    # should we complain about bad input?
+    { no warnings; $zone =~ s/^\s+//g; $zone =~ s/\s+$//g; }
+    unless (defined $zone && length($zone) > 0) {
+      $warn .= "Bad zones setting, element $i, zero-length zone name.\n";
+      $r = CHECK_WARN unless ($r == CHECK_ERR);
+      next;
+    }
+    
+    # compare zone data...
+    my $x = $self->_cmpZone($zone, $self->{nameserver}, @peers);
+    unless ($x) {
+      $err .= $self->error() . "\n";
+      $r = CHECK_ERR;
+    }
+  }
+
+  if ($r != CHECK_OK) {
+    $err =~ s/\s+$//g;
+    $warn =~ s/\s+$//g;
+    $self->warning($warn);
+    $self->error($err);
+  }
+
+  return $r;
 }
 
 sub zoneTransfer {
@@ -208,6 +195,78 @@ sub compareZone {
 	
 	# compare data records...
 	return $self->_compareRecords($ref, $cmp);
+}
+
+sub _cmpZone {
+  my ($self, $zone, $ns, @peers) = @_;
+  unless (defined $zone && length($zone) > 0) {
+    $self->error("Undefined zone name.");
+    return 0;
+  }
+  unless (defined $ns && length($ns) > 0) {
+    $self->error("Undefined zone nameserver.");
+    return 0;
+  }
+  unless (@peers) {
+    $self->error("Undefined nameserver peer list.");
+    return 0;    
+  }
+  
+  # get referential zone...
+  $self->bufApp("Checking zone: $zone");
+  my $zone_ref = $self->zoneTransfer($zone, $ns);
+  return 0 unless (defined $zone_ref);
+	
+  my $soa = $zone_ref->[0];
+  my $serial = (blessed($soa) && $soa->isa('Net::DNS::RR::SOA')) ?
+    $soa->serial() :
+    '';
+	
+  $self->bufApp(
+    "  Referential DNS server $ns zone contains " .
+    ($#{$zone_ref} + 1) . " records [serial: $serial]."
+  );
+	
+  # compare nameserver results...
+  my $cmp = {};
+	
+  # transfer zones from all nameserver peers
+  foreach my $ns (@peers) {
+    my $z = $self->zoneTransfer($zone, $ns);
+    $cmp->{$ns} = [ $z, $self->error() ];
+  }
+	
+  my $warn = '';
+  my $err = '';
+  my $result = 1;
+
+  # compare refential and peer zones...
+  foreach my $ns (keys %{$cmp}) {
+    my $z = $cmp->{$ns}->[0];
+    my $e = $cmp->{$ns}->[1];
+    # no zone, no fun...
+    unless (defined $z) {
+      $err = "Nameserver $ns: " . $e . "\n";
+      $result = 0;
+      next;
+    }
+		
+    $self->bufApp("  Peer nameserver $ns: zone contains " . ($#{$z} + 1) . " records.");
+
+    # compare zone data
+    unless ($self->compareZone($zone_ref, $z)) {
+      $err = $self->error() . "\n";
+      $result = 0;
+      next;
+    }
+  }
+
+  unless ($result) {
+    $err =~ s/\s+$//g;
+    $self->error($err);
+  }
+
+  return $result;
 }
 
 =head1 SEE ALSO

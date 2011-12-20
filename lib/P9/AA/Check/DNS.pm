@@ -10,7 +10,7 @@ use Scalar::Util qw(blessed);
 use P9::AA::Constants;
 use base 'P9::AA::Check';
 
-our $VERSION = 0.14;
+our $VERSION = 0.15;
 
 =head1 NAME
 
@@ -58,12 +58,30 @@ sub clearParams {
 		$self->validate_int(1),
 	);
 	$self->cfgParamAdd(
+		'srcaddr',
+		undef,
+		'DNS resolver source address.',
+		$self->validate_str(1024),
+	);
+	$self->cfgParamAdd(
+		'srcport',
+		undef,
+		'DNS resolver source port.',
+		$self->validate_int(1, 65535),
+	);
+	$self->cfgParamAdd(
 		'check_authority',
 		0,
 		'Check authority section for NS records in case of empty answer section.',
 		$self->validate_bool(),
 	);
-	
+	$self->cfgParamAdd(
+		'debug_dns',
+		0,
+		'Display low-level DNS debugging messages.',
+		$self->validate_bool(),
+	);
+		
 	return 1;
 }
 
@@ -170,19 +188,39 @@ sub getResolver {
 	my ($self, $nameserver) = @_;
 	$nameserver = $self->{nameserver} unless (defined $nameserver && length($nameserver));
 	$nameserver = '127.0.0.1' unless (defined $nameserver);
+	
+	# do we have it in cache?
+	my $ck = $nameserver;
+	if (exists($self->{_cache}->{$ck})) {
+	  return $self->{_cache}->{$ck};
+	}
 
-	# create resolver object
-	my $res = eval {
-		Net::DNS::Resolver->new(
-			nameservers => [ $nameserver ],
-			# debug => $self->{debug},
-			tcp_timeout => $self->{timeout},
-			udp_timeout => $self->{timeout},
-		)
-	};
+	# create options...
+	my %opt = (
+		nameservers => [ $nameserver ],
+		debug => $self->{debug_dns},
+		tcp_timeout => $self->{timeout},
+		udp_timeout => $self->{timeout},
+		persistent_tcp => 1,
+		persistent_udp => 1,
+	);
+	
+	# source address/port?
+	$opt{srcaddr} = $self->{srcaddr} if (defined $self->{srcaddr} && length($self->{srcaddr}) > 0);
+	$opt{srcport} = $self->{srcport} if (defined $self->{srcport} && length($self->{srcport}) > 0);
+	
+	# create resolver
+	if ($self->{debug_dns}) {
+	  $self->bufApp("Creating resolver with options: " . $self->dumpVarCompact(\ %opt));
+	}
+	local $@;
+	my $res = eval { Net::DNS::Resolver->new(%opt) };
 	unless (defined $res) {
 		$self->error("Unable to create DNS resolver object: $!/$@");
 	}
+	
+	# save it to cache
+	$self->{_cache}->{$ck} = $res;
 
 	return $res;
 }

@@ -9,7 +9,7 @@ use P9::AA::Constants;
 use base 'P9::AA::Check::URL';
 
 # version MUST be set
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 
 =head1 NAME
 
@@ -51,8 +51,8 @@ sub clearParams {
 	);
 
 
-	$self->cfgParamRemove('content_pattern');
-	$self->cfgParamRemove('content_pattern_match');
+	#$self->cfgParamRemove('content_pattern');
+	#$self->cfgParamRemove('content_pattern_match');
 
 	# this method MUST return 1!
 	return 1;
@@ -61,14 +61,41 @@ sub clearParams {
 # actually performs ping
 sub check {
 	my ($self) = @_;
+	# create content regex
+	my $re = undef;
+	if (defined $self->{content_pattern}) {
+		my $v = $self->validate_regex();
+		$re = $v->($self->{content_pattern});
+		unless (defined $re) {
+			my $e = $@;
+			$e =~ s/\s+at\s+(.*)$//g;
+			return $self->error("Error compiling regex: $self->{content_pattern}: $e");
+		}
+	}
 	
-	my $json = $self->getJSON();
+	my ($json, $raw_data) = $self->getJSON();
 
 	if ($self->{debug}) {
 		$self->bufApp("--- BEGIN RETURNED JSON ---");
 		$self->bufApp($self->dumpVar($json));
 		$self->bufApp("--- BEGIN RETURNED JSON ---");
 	}
+
+	# inspect content?
+	if (defined $re) {
+		if ($self->{content_pattern_match}) {
+			# content should match pattern
+			if ($raw_data !~ $re) {
+				return $self->error("Returned content doesn't match regex $re.");
+			}
+		} else {
+			# content shouldn't match pattern
+			if ($raw_data =~ $re) {
+				return $self->error("Returned content matches regex $re, but it shouldn't.");
+			}
+		}		
+	}
+
 
 	return (defined $json) ? CHECK_OK : CHECK_ERR;
 }
@@ -124,6 +151,8 @@ sub getJSON {
 		$self->bufApp($self->dumpVar($json));
 		$self->bufApp("--- END PARSED JSON ---");
 	}
+	
+	return wantarray ? ($json, $json_str) : $json;
 
 	return $json;
 }

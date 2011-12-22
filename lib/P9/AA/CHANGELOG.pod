@@ -18,6 +18,9 @@ B<debug_dns>, B<srcaddr>, B<srcport>.
 =item * modules L<B<DNSZone>|P9::AA::Check::DNSZone> and L<B<DNSZoneConsistency>|P9::AA::Check::DNSZoneConsistency> now
 accept comma separated list of zone names in B<zone> parameter. 
 
+=item * module L<B<JSON>|P9::AA::Check::JSON> now supports json structure checks using regular expressions with
+parameters B<content_pattern> and B<content_pattern_match>
+
 =item * Added Win32, OS/2 support to L<P9::AA::Config>
 
 =back

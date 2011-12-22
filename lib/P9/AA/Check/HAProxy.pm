@@ -182,8 +182,15 @@ sub check {
         next if ($status eq 'OPEN');
         $num_srvs++;
         
+        # is this backend in maintenance mode?
+        if ($status eq 'MAINT') {
+          $warn .= "BACKEND $bck_name/$srv_name is in maintenance mode.\n";
+          $res = CHECK_WARN unless ($res == CHECK_ERR);
+          next;
+        }
+        
         # should we just ignore any errors?
-        if ($status eq 'UP') {
+        if ($status eq 'UP' || $status eq 'NO CHECK') {
           $num_up++;
         } else {
           my $str = "BACKEND $bck_name/$srv_name is not in OK state: $status";

@@ -146,7 +146,9 @@ sub qx2 {
 	my @cmd = shellwords(@_);
 	my $prog = shift(@cmd);
 	my $full_prog = $self->which($prog);
-	return undef unless (defined $full_prog);
+	unless (defined $full_prog) {
+      return (wantarray ? (undef, 255) : undef);
+	}
 	unshift(@cmd, $full_prog);
 
 	# do the execution

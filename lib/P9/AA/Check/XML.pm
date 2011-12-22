@@ -87,25 +87,51 @@ sub clearParams {
 	);
 	
 	# remove some unneeded params
-	$self->cfgParamRemove('content_pattern');
-	$self->cfgParamRemove('content_pattern_match');
+	# $self->cfgParamRemove('content_pattern');
+	# $self->cfgParamRemove('content_pattern_match');
 	
 	return 1;
 }
 
 sub check {
-	my ($self) = @_;	
+	my ($self) = @_;
+
+	# create content regex
+	my $re = undef;
+	if (defined $self->{content_pattern}) {
+		my $v = $self->validate_regex();
+		$re = $v->($self->{content_pattern});
+		unless (defined $re) {
+			my $e = $@;
+			$e =~ s/\s+at\s+(.*)$//g;
+			return $self->error("Error compiling regex: $self->{content_pattern}: $e");
+		}
+	}
 	
 	# get XML
 	my ($xml, $xml_str) = $self->getXML();
 	return CHECK_ERR unless (defined $xml && ref($xml) eq 'HASH');
-	
+
+	# inspect content?
+	if (defined $re) {
+		if ($self->{content_pattern_match}) {
+			# content should match pattern
+			if ($xml_str !~ $re) {
+				return $self->error("Returned content doesn't match regex $re.");
+			}
+		} else {
+			# content shouldn't match pattern
+			if ($xml_str =~ $re) {
+				return $self->error("Returned content matches regex $re, but it shouldn't.");
+			}
+		}		
+	}
+
 	# no strict checking? well, we succeeded!
 	return CHECK_OK unless ($self->{strict});
 	
 	# perform strict XML check...
-	return CHECK_ERR unless ($self->validateXMLStrict(\ $xml_str));
-	return CHECK_OK;
+	return ($self->validateXMLStrict(\ $xml_str)) ? CHECK_OK : CHECK_ERR;
 }
 
 =head2 getXML
@@ -254,7 +280,7 @@ sub validateXMLStrict {
 	# remove xml file
 	unlink($file) if ($file_remove);
 
-	return 1;
+	return $retval;
 }
 
 ##################################################
@@ -307,7 +333,6 @@ sub _validateXml {
 	
 	# run xmllint
 	my ($out, $c) = $self->qx2($cmd);
-	
 	if ($c > 0) {
 		my $err = exists($xmllint_errs->{$c}) ? $xmllint_errs->{$c} : "unknown error.";
 		$self->error("xmllint(1) exited with status $c: " . $err);

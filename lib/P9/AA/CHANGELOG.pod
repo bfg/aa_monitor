@@ -21,6 +21,11 @@ accept comma separated list of zone names in B<zone> parameter.
 =item * module L<B<JSON>|P9::AA::Check::JSON> now supports json structure checks using regular expressions with
 parameters B<content_pattern> and B<content_pattern_match>
 
+=item * module L<B<Memory>|P9::AA::Check::Memory> fixed completely b0rken memory usage calculation
+
+=item * module L<B<RTSP>|P9::AA::Check::RTSP> implemented connection caching, complete RTSP request is now
+sent using single print() call.
+
 =item * module L<B<XML>|P9::AA::Check::XML> now supports XML structure checks using regular expressions with
 parameters B<content_pattern> and B<content_pattern_match>
 

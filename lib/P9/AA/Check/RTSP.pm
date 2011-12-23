@@ -3,10 +3,12 @@ package P9::AA::Check::RTSP;
 use strict;
 use warnings;
 
+use URI;
+
 use P9::AA::Constants;
 use base 'P9::AA::Check::_Socket';
 
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 
 =head1 NAME
 
@@ -218,15 +220,24 @@ Returns initialized MyRTSP object on success, otherwise undef.
 =cut
 sub rtspConnect {
 	my ($self, $url) = @_;
+	my $u = URI->new($url);
+	my $hp = $u->host_port();
+    # anything in cache?
+	if (exists($self->{_cache}->{$hp})) {
+	  return $self->{_cache}->{$hp};
+	}
+
 	my $rtsp = MyRTSP->new(connector => $self, debug => $self->{debug});
 	unless ($rtsp->connect_url($url)) {
 		$self->error("Unable to connect: " . $rtsp->error());
-		return undef;
+		#return undef;
+		$rtsp = undef;
 	}
-	
+		
 	# send OPTIONS command first...
 	my $r = $rtsp->command("OPTIONS *");
-	
+
+	$self->{_cache}->{$hp} = $rtsp;
 	return $rtsp;
 }
 
@@ -382,12 +393,23 @@ sub command {
 	
 	$self->{_last_cmd} = $cmd;
 
+#=pod
+	my $buf = $cmd . " RTSP/1.0" . CRLF;
+	$buf .= "CSeq: $self->{_seq}" . CRLF;
+	$buf .= "User-Agent: " . ref($self) . "/" . sprintf("%-2.2f", $VERSION) . CRLF;
+	map { $buf .= "$_: $headers{$_}" . CRLF } sort keys %headers;
+	$buf .= CRLF;
+	
+	$self->_print_s($s, $buf);
+#=cut
+=pod
 	$self->_print_s($s, $cmd . " RTSP/1.0" . CRLF);
 	$self->_print_s($s, "CSeq: $self->{_seq}" . CRLF);
 	$self->_print_s($s, "User-Agent: " . ref($self) . "/" . sprintf("%-2.2f", $VERSION) . CRLF);
 	map { $self->_print_s($s, "$_: $headers{$_}" . CRLF) } sort keys %headers;
 	$self->_print_s($s, CRLF);
-	
+=cut
+
 	# read response
 	return $self->_response($s);
 }

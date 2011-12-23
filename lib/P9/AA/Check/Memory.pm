@@ -7,7 +7,7 @@ use P9::AA::Constants;
 use base 'P9::AA::Check';
 
 # version MUST be set
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 
 =head1 NAME
 
@@ -78,7 +78,7 @@ sub check {
 	my $warn = '';
 	
 	# check swap...
-	my $swap_used = _p($data->{swap}->{used}, $data->{swap}->{total});
+	my $swap_used = $self->_p($data->{swap}->{used}, $data->{swap}->{total});
 	if ($swap_used > 0) {
 		if ($swap_used > $self->{swap_err}) {
 			$err .= "Swap usage of $swap_used% exceeds threshold of $self->{swap_err}%.\n";
@@ -91,12 +91,12 @@ sub check {
 	}
 	
 	# check memory
-	my $buffers_p = _p($data->{memory}->{buffers}, $data->{memory}->{total});
+	my $buffers_p = $self->_p($data->{memory}->{buffers}, $data->{memory}->{total});
 	if ($self->{buffers_err} && $buffers_p > $self->{buffers_err}) {
 		$err .= "Buffers usage of $buffers_p% exceeds threshold of $self->{buffers_err}%.\n";
 		$res = CHECK_ERR;
 	}
-	my $shared_p = _p($data->{memory}->{shared}, $data->{memory}->{total});
+	my $shared_p = $self->_p($data->{memory}->{shared}, $data->{memory}->{total});
 	if ($self->{shared_err} && $shared_p > $self->{shared_err}) {
 		$err .= "Buffers usage of $shared_p% exceeds threshold of $self->{shared_err}%.\n";
 		$res = CHECK_ERR;
@@ -228,12 +228,17 @@ sub parseSwapUsage {
 }
 
 sub _p {
-	my ($a, $b) = @_;
+	my ($self, $a, $b) = @_;
 	return 0 if (!defined $b || $b == 0);
-	return sprintf(
+	my $r = (sprintf(
 		"%-2.2f",
-		abs($a) / abs($b)
-	);
+		(abs($a) * 100) / abs($b)
+	) + 0);
+#	if ($self->{debug}) {
+#	  $self->bufApp("A: $a, B: $b, RES: $r");
+#	}
+	
+	return $r;
 }
 
 =head1 SEE ALSO

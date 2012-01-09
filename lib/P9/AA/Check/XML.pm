@@ -10,12 +10,13 @@ use XML::Simple;
 use POSIX qw(strftime);
 use File::Temp qw(tempfile);
 use Digest::MD5 qw(md5_hex);
+use Scalar::Util qw(blessed);
 
 use P9::AA::Constants;
 use P9::AA::Config;
 use base 'P9::AA::Check::URL';
 
-our $VERSION = 0.13;
+our $VERSION = 0.14;
 
 my $xmllint_errs = {
 	0 => "No error",
@@ -157,9 +158,13 @@ Returns undef on error.
 
 B<NOTE>: This method supports all keys supported by L<P9::AA::Check::URL/prepareRequest>.
 
+B<NOTE>: This method supports special B<parser> key which can be used to supply user-configured
+L<XML::Simple> parser object.
+
 =cut
 sub getXML {
 	my ($self, %opt) = @_;
+	my $p = delete($opt{parser});
 	my $req = $self->prepareRequest(%opt);
 	return undef unless (defined $req);
 
@@ -173,7 +178,7 @@ sub getXML {
 	}
 	
 	# create xml parser
-	my $p = $self->getXMLParser();
+	$p = $self->getXMLParser() unless (defined $p && blessed($p) && $p->isa('XML::Simple'));
 	return undef unless (defined $p);
 	
 	# convert string to hash reference
@@ -194,11 +199,14 @@ sub getXML {
  my $parser = $self->getXMLParser();
  my $struct = $parser->xml_in(\ $string);
 
-Returns initialized and configured L<XML::Parser> object on success, otherwise undef.
+Returns initialized and configured L<XML::Simple> object on success, otherwise undef.
+
+B<NOTE:> This method supports B<ALL> L<XML::Simple> constructor key => value pairs.
 
 =cut
 sub getXMLParser {
-	return XML::Simple->new();
+  my $self = shift;
+  return XML::Simple->new(@_);
 }
 
 =head2 validateXMLStrict

@@ -134,12 +134,15 @@ sub getManifest {
   my $url = shift;
   $url = $self->{url} unless (defined $url);
   
-  unless ($url =~ m/\/+manifest$/) {
+  unless ($url =~ m/\/+manifest$/i) {
     $url .= '/manifest';
   }
-
+  
+  # get parser
   local $XML::Simple::PREFERRED_PARSER = 'XML::Parser';
-  my $xml = $self->getXML(@_, url => $url, request_method => 'GET');
+  my $parser = $self->getXMLParser(ForceArray => 1);
+
+  my $xml = $self->getXML(@_, url => $url, request_method => 'GET', parser => $parser);
   return undef unless (defined $xml);
 
   # lowecase all hash keys and return...

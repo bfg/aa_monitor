@@ -4,6 +4,14 @@ aa_monitor changelog
 
 =head1 VERSIONS
 
+=head2 1.1.3
+
+=over
+
+=item * module L<B<IOIPTV>|P9::AA::Check::IOIPTV>: new parameter B<min_byteps>, refactoring
+
+=back
+
 =head2 1.1.2
 
 =over

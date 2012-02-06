@@ -10,6 +10,8 @@ aa_monitor changelog
 
 =item * module L<B<IOIPTV>|P9::AA::Check::IOIPTV>: new parameter B<min_byteps>, refactoring
 
+=item * module L<B<RTSP>|P9::AA::Check::RTSP>: changed DESCRIBE/SETUP/PLAY command order 
+
 =back
 
 =head2 1.1.2

@@ -8,7 +8,7 @@ use URI;
 use P9::AA::Constants;
 use base 'P9::AA::Check::_Socket';
 
-our $VERSION = 0.12;
+our $VERSION = 0.13;
 
 =head1 NAME
 
@@ -52,6 +52,138 @@ sub clearParams {
 	return 1;
 }
 
+sub _rtspSetup {
+	my ($self, $e) = @_;
+	my $cb = $e->{content_base};
+	my $tid = $e->{track_id};
+	my $type = $e->{type};
+	unless (defined $cb) {
+		$self->error("Undefined key: content_base");
+		return undef;
+	}
+	unless (defined $tid) {
+		$self->error("Undefined key: track_id");
+		return undef;
+	}
+	unless (defined $type) {
+		$self->error("Undefined key: type");
+		return undef;
+	}
+
+	my $perr = "[id: $tid, type: $type] ";
+	
+	my $err = '';
+	my $result = {
+		udp => undef,
+		play_url => undef,
+		content_base => $e->{content_base},
+		track_id => $e->{track_id},
+		type => $e->{type},
+	};
+
+	my $play_url = $cb . 'trackID=' . $tid;
+	$self->bufApp("SETUP [content-base: $cb; type: $type]:");
+	$self->bufApp("  PLAY URL: $play_url");
+		
+	# create UDP listening socket
+	$result->{udp} = $self->_udpListenerCreate();
+	unless ($result->{udp}) {
+		$self->error(
+			$perr . "Unable to create udp listening socket: " .
+			$self->error() . "\n"
+		);
+		return undef;
+	}
+		
+	# get listening port number
+	my $udp_port = $result->{udp}->sockport();
+	$self->bufApp("  Created UDP listening socket on port $udp_port");
+
+	# create another RTSP connection...
+	my $conn = $self->rtspConnect($self->{url});
+	unless ($conn) {
+		$self->error(
+			$perr . "Unable to create additional connection: " .
+			$self->error() . "\n"
+		);
+		return undef;
+	}
+
+	# create client_port=header property
+	my $cp_str = $udp_port . '-' . ($udp_port + 1);
+		
+	# SETUP
+	$self->bufApp("  SETUP $play_url; client_port=$cp_str");
+	my ($ok, $setup) = $conn->command("SETUP $play_url", 'Transport' => 'RTP/AVP;unicast;client_port=' . $cp_str);
+	unless ($ok) {
+		$self->error(
+			$perr . "Error setting up playback: " . $conn->error() . "\n"
+		);
+		return undef;
+	}
+
+	# get session id
+	my $session = $setup->{headers}->{session};
+	unless (defined $session && length $session) {
+		$self->error(
+			$perr .
+			"Error setting up playback: No session id in SETUP response\n"
+		);
+		return undef;
+	}
+	$session = (split(/[;,]+/, $session))[0];
+	$self->bufApp("  Session ID: $session");
+	$result->{session} = $session;
+
+	return $result;
+}
+
+sub _rtspPlay {
+	my ($self, $e) = @_;
+	my $perr = "[id: $e->{track_id}, type: $e->{type}] ";
+
+	$self->bufApp();
+	$self->bufApp("Playing $perr");
+	# create another RTSP connection...
+	my $conn = $self->rtspConnect($self->{url});
+	unless ($conn) {
+		$self->error(
+			$perr . "Unable to create additional connection: " .
+			$self->error() . "\n"
+		);
+		return undef;
+	}
+	
+	# start playback!
+	my ($okp, $play) = $conn->command("PLAY $self->{url}", Session => $e->{session});
+	unless ($okp) {
+		$self->error($perr . "Error starting playback: $play->{status}");
+		return 0;
+	}
+		
+	# try to read played stream...
+	local $@;
+	my $buf = eval { $self->_udpRead($e->{udp}) };
+	if ($@) {
+		$@ =~ s/\s+at\s+.+//g;
+		$@ =~ s/\s+$//g;
+		$self->error($perr . "Error reading UDP playback stream: $@");
+		return 0;
+	}
+	unless (defined $buf && length($buf) > 0) {
+		$self->error($perr . "No data read from UDP playback stream: $@");
+		return 0;
+	}
+	my $read_len = length $buf;
+	$self->bufApp("  Read $read_len bytes of UDP playback stream.");
+		
+	# we should teardown the session right now.
+	# but we want. too lazy to code that...
+	$self->bufApp("  Stream id $e->{track_id} [$e->{type}] looks healthy.");
+
+	return 1;
+}
+
 # actually performs ping
 sub check {
 	my ($self) = @_;
@@ -62,95 +194,28 @@ sub check {
 	my $err = '';
 	my $result = CHECK_OK;
 	
+	# do setups first!
+	my @setups = ();
 	foreach my $e (@{$describe}) {
 		$self->bufApp();
-		my $cb = $e->{content_base};
-		my $tid = $e->{track_id};
-		unless (defined $cb && $tid) {
-			no warnings;
-			$err .= "Bad describe data: content base: 'cb', track id: '$tid'\n";
-			$result = CHECK_ERR;
+		my $x = $self->_rtspSetup($e);
+		unless (defined $x) {
+			$err .= $self->error() . "\n";
 			next;
 		}
-		my $type = $e->{type};
-		my $perr = "[id: $tid, type: $type] ";
-		
-		$self->bufApp("Checking track $tid: content base: $cb [$type]");
-		
-		my $play_url = $cb . 'trackID=' . $tid;
-		$self->bufApp("  PLAY URL: $play_url");
-		
-		# create UDP listening socket
-		my $udp = $self->_udpListenerCreate();
-		unless ($udp) {
-			$err .= $perr . "Unable to create udp listening socket: " . $self->error() . "\n";
+		push(@setups, $x);
+	}
+	unless (@setups) {
+		$self->error("No SETUP commands finished successfully!");
+		return CHECK_ERR;
+	}
+	
+	# now try to play streams...
+	foreach my $e (@setups) {
+		unless ($self->_rtspPlay($e)) {
+			$err .= $self->error() . "\n";
 			$result = CHECK_ERR;
-			next;			
 		}
-		
-		# get listening port number
-		my $udp_port = $udp->sockport();
-		$self->bufApp("  Created UDP listening socket on port $udp_port");
-		
-		# create another RTSP connection...
-		my $conn = $self->rtspConnect($self->{url});
-		unless ($conn) {
-			$err .= $perr . "Unable to create additional connection: " . $self->error() . "\n";
-			$result = CHECK_ERR;
-			next;
-		}
-
-		# create client_port=header property
-		my $cp_str = $udp_port . '-' . ($udp_port + 1);
-		
-		# SETUP
-		$self->bufApp("  SETUP $play_url; client_port=$cp_str");
-		my ($ok, $setup) = $conn->command("SETUP $play_url", 'Transport' => 'RTP/AVP;unicast;client_port=' . $cp_str);
-		unless ($ok) {
-			$err .= $perr . "Error setting up playback: " . $conn->error . "\n";
-			$result = CHECK_ERR;
-			next;
-		}
-
-		# get session id
-		my $session = $setup->{headers}->{session};
-		unless (defined $session && length $session) {
-			$err .= $perr . "Error setting up playback: No session id in SETUP response\n";
-			$result = CHECK_ERR;
-			next;
-		}
-		$session = (split(/[;,]+/, $session))[0];
-		$self->bufApp("  Session ID: $session");
-		
-		# start playback!
-		my ($okp, $play) = $conn->command("PLAY $self->{url}", Session => $session);
-		unless ($okp) {
-			$err .= $perr . "Error starting playback: $play->{status}\n";
-			$result = CHECK_ERR;
-			next;
-		}
-		
-		# try to read played stream...
-		local $@;
-		my $buf = eval { $self->_udpRead($udp) };
-		if ($@) {
-			$@ =~ s/\s+at\s+.+//g;
-			$@ =~ s/\s+$//g;
-			$err .= $perr . "Error reading UDP playback stream: $@\n";
-			$result = CHECK_ERR;
-			next;
-		}
-		unless (defined $buf && length($buf) > 0) {
-			$err .= $perr . "No data read from UDP playback stream: $@\n";
-			$result = CHECK_ERR;
-			next;			
-		}
-		my $read_len = length $buf;
-		$self->bufApp("  Read $read_len bytes of UDP playback stream.");
-		
-		# we should teardown the session right now.
-		# but we want. too lazy to code that...
-		$self->bufApp("  Stream id $tid [$type] looks healthy.");
 	}
 	
 	# validate check...
@@ -191,15 +256,20 @@ Example structure:
 =cut
 sub getDescribe {
 	my ($self, $url) = @_;
+	$self->error('');
+	my $perr = 'Unable to get RTSP stream description: ';
 
 	# try to connect...
 	my $rtsp = $self->rtspConnect($url);
-	return undef unless ($rtsp);
+	unless ($rtsp) {
+		$self->error($perr . $self->error());
+		return undef;
+	}
 	
 	# get rtsp info about url...
 	my $describe = $rtsp->describe();
 	unless ($describe && ref($describe) eq 'ARRAY') {
-		$self->error($rtsp->error());
+		$self->error($perr . $rtsp->error());
 		return undef;
 	}
 	if ($self->{debug}) {
@@ -230,8 +300,8 @@ sub rtspConnect {
 	my $rtsp = MyRTSP->new(connector => $self, debug => $self->{debug});
 	unless ($rtsp->connect_url($url)) {
 		$self->error("Unable to connect: " . $rtsp->error());
-		#return undef;
-		$rtsp = undef;
+		return undef;
+		#$rtsp = undef;
 	}
 		
 	# send OPTIONS command first...

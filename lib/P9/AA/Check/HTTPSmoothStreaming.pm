@@ -12,7 +12,7 @@ use P9::AA::Constants;
 use base 'P9::AA::Check::XML';
 
 
-our $VERSION = 0.10;
+our $VERSION = '0.11';
 
 =head1 NAME
 
@@ -46,7 +46,17 @@ sub clearParams {
   $self->cfgParamAdd(
     'chunk_num', 0,
     'Try to download specified data chunk. Set to -1 to validate random chunk number.',
-    $self->validate_int(-1, undef, 0),
+    $self->validate_int(-1, 0, undef),
+  );
+  $self->cfgParamAdd(
+    'require_audio', 1,
+    'Require audio track in manifest (1: require, 0: prefer, issue warning unless present, -1: disallow audio, issue error if present)',
+    $self->validate_int(-1, 1, 1)
+  );
+  $self->cfgParamAdd(
+    'require_video', 1,
+    'Require video track in manifest (1: require, 0: prefer, issue warning unless present, -1: disallow audio, issue error if present)',
+    $self->validate_int(-1, 1, 1)
   );
 
   # you can also remove any previously created
@@ -95,21 +105,26 @@ sub check {
   return $self->error() unless (defined $manifest);
   
   # check manifest
+  my $res = CHECK_OK;
   my $err = '';
-  unless ($self->checkManifest($manifest, 'audio')) {
-    $err = "\n" . $self->error();
-  }
-  unless ($self->checkManifest($manifest, 'video')) {
-    $err .= "\n" . $self->error();
+  my $warn = '';
+  
+  foreach my $type (qw(audio video)) {
+    my $x = $self->checkManifest($manifest, $type);
+    $self->_validateCheckManifest($x, $type, \$res, \$err, \$warn);
   }
 
-  if (length($err) > 0) {
+  #if (length($err) > 0) {
+  unless ($res == CHECK_OK) {
     $err =~ s/^\s+//gm;
     $err =~ s/\s+$//gm;
-    return $self->error($err);
+    $warn =~ s/^\s+//gm;
+    $warn =~ s/\s+$//gm;
+    $self->warning($warn);
+    $self->error($err);
   }
   
-  return CHECK_OK;
+  return $res;
 }
 
 =head2 getManifest
@@ -259,6 +274,30 @@ sub checkManifest {
   }
 
   return $r;
+}
+
+sub _validateCheckManifest {
+  my ($self, $val, $type, $res, $err, $warn) = @_;
+  my $policy = $self->{'require_' . $type} || 1;
+
+  if ($policy == 1) {
+    unless ($val) {
+      $$res = CHECK_ERR;
+      $$err .= $self->error() . "\n";
+    }
+  }
+  elsif ($policy == 0) {
+    unless ($val) {
+      $$res = CHECK_WARN unless ($$res == CHECK_ERR);
+      $$warn .= $self->error() . "\n";
+    }
+  }
+  elsif ($policy == -1) {
+    if ($val) {
+      $$res = CHECK_ERR;
+      $$err .= "Stream type $type shouldn't be present, but it is.\n";
+    }
+  }
 }
 
 sub _searchManifest {

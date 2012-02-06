@@ -15,6 +15,10 @@ aa_monitor changelog
 =item * module L<B<HTTPSmoothStreaming>|P9::AA::Check::HTTPSmoothStreaming>: new tri state parameters:
 B<require_audio>, B<require_video>.
 
+=item * modules L<B<HTTPSmoothStreaming>|P9::AA::Check::HTTPSmoothStreaming>,
+L<B<HTTPLiveStreaming>|P9::AA::Check::HTTPLiveStreaming>: added missing host_header, headerHost
+support.
+
 =back
 
 =head2 1.1.2

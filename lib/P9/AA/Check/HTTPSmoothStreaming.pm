@@ -12,7 +12,7 @@ use P9::AA::Constants;
 use base 'P9::AA::Check::XML';
 
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 =head1 NAME
 
@@ -397,8 +397,13 @@ sub _checkUrl {
   # time to download some stuff...
   my $ts = time();
   
+  my %opts = ();
+  $opts{Host} = $self->{host_header} if ($self->{host_header});
+  $opts{Host} = $self->{headerHost} if ($self->{headerHost});
+  
   my $r = $ua->get(
     $url,
+    %opts,
     ':content_file' => $file,
   );
   my $duration = time() - $ts;

@@ -12,7 +12,7 @@ use base 'P9::AA::Check::URL';
 
 use P9::AA::Check::HTTPLiveStreaming::PlayList;
 
-our $VERSION = 0.10;
+our $VERSION = 0.11;
 
 
 =head1 NAME
@@ -199,7 +199,12 @@ sub checkEntry {
   
   my $ua = $self->getUa();
   my $ts = time();
-  my $r = $ua->get($entry, ':content_file' => $file);
+
+  my %opts = ();
+  $opts{Host} = $self->{host_header} if ($self->{host_header});
+  $opts{Host} = $self->{headerHost} if ($self->{headerHost});
+
+  my $r = $ua->get($entry, %opts, ':content_file' => $file);
   my $duration = time() - $ts;
   unless (defined $r && $r->is_success()) {
     $self->error($top_err . $r->status_line());

@@ -662,6 +662,8 @@ sub _check_status_str {
 
 =item L<http://code.google.com/p/haproxy-docs/wiki/StatisticsMonitoring#CSV_format>
 
+=back
+
 =head1 AUTHOR
 
 Brane F. Gracnar

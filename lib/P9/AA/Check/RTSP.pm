@@ -463,7 +463,6 @@ sub command {
 	
 	$self->{_last_cmd} = $cmd;
 
-#=pod
 	my $buf = $cmd . " RTSP/1.0" . CRLF;
 	$buf .= "CSeq: $self->{_seq}" . CRLF;
 	$buf .= "User-Agent: " . ref($self) . "/" . sprintf("%-2.2f", $VERSION) . CRLF;
@@ -471,14 +470,6 @@ sub command {
 	$buf .= CRLF;
 	
 	$self->_print_s($s, $buf);
-#=cut
-=pod
-	$self->_print_s($s, $cmd . " RTSP/1.0" . CRLF);
-	$self->_print_s($s, "CSeq: $self->{_seq}" . CRLF);
-	$self->_print_s($s, "User-Agent: " . ref($self) . "/" . sprintf("%-2.2f", $VERSION) . CRLF);
-	map { $self->_print_s($s, "$_: $headers{$_}" . CRLF) } sort keys %headers;
-	$self->_print_s($s, CRLF);
-=cut
 
 	# read response
 	return $self->_response($s);

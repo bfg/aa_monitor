@@ -119,35 +119,33 @@ sub check {
 		}
 		else {
 		# parse section data...
-=pod
-~~~OK~~~
-[ndbd(NDB)]	2 node(s)
-id=3	@10.14.1.40  (Version: 5.0.45, Nodegroup: 0, Master)
-id=4	@10.14.1.41  (Version: 5.0.45, Nodegroup: 0) 
-[ndb_mgmd(MGM)]	2 node(s)
-id=1	@10.14.0.69  (Version: 5.0.51)
-id=2	@10.14.1.69  (Version: 5.0.51) 
-[mysqld(API)]	2 node(s)
-id=5	@10.14.1.41  (Version: 5.0.45)
-id=6	@10.14.1.40  (Version: 5.0.45)
-=cut
-=pod
-~~~FAILED~~~
-Connected to Management Server at: localhost:1186
-Cluster Configuration
----------------------
-[ndbd(NDB)]     2 node(s)
-id=3    @10.14.1.40  (Version: 5.0.45, starting, Nodegroup: 0, Master)
-id=4    @10.14.1.41  (Version: 5.0.45, starting, Nodegroup: 0)
 
-[ndb_mgmd(MGM)] 2 node(s)
-id=1   (Version: 5.0.51)
-id=2 (not connected, accepting connect from 10.14.1.69)
+#~~~OK~~~
+#[ndbd(NDB)]	2 node(s)
+#id=3	@10.14.1.40  (Version: 5.0.45, Nodegroup: 0, Master)
+#id=4	@10.14.1.41  (Version: 5.0.45, Nodegroup: 0) 
+#[ndb_mgmd(MGM)]	2 node(s)
+#id=1	@10.14.0.69  (Version: 5.0.51)
+#id=2	@10.14.1.69  (Version: 5.0.51) 
+#[mysqld(API)]	2 node(s)
+#id=5	@10.14.1.41  (Version: 5.0.45)
+#id=6	@10.14.1.40  (Version: 5.0.45)
+#~~~FAILED~~~
+#Connected to Management Server at: localhost:1186
+#Cluster Configuration
+#---------------------
+#[ndbd(NDB)]     2 node(s)
+#id=3    @10.14.1.40  (Version: 5.0.45, starting, Nodegroup: 0, Master)
+#id=4    @10.14.1.41  (Version: 5.0.45, starting, Nodegroup: 0)
+#
+#[ndb_mgmd(MGM)] 2 node(s)
+#id=1   (Version: 5.0.51)
+#id=2 (not connected, accepting connect from 10.14.1.69)
+#
+#[mysqld(API)]   2 node(s)
+#id=5 (not connected, accepting connect from any host)
+#id=6 (not connected, accepting connect from any host)
 
-[mysqld(API)]   2 node(s)
-id=5 (not connected, accepting connect from any host)
-id=6 (not connected, accepting connect from any host)
-=cut
 			if ($line =~ m/^id=(\d+)\s+\@([\d\.]+)\s+\(([^\)]+)\)/) {
 				my $id = $1;
 				my $node_addr = $2;

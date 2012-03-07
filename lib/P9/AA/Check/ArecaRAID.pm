@@ -131,10 +131,16 @@ sub toString {
 	return $str
 }
 
-# my $failed_rs = $self->_getFailedRAIDSets($adapter);
-#
-#Get a listref of failed RAIDSets. $failed_rs contains an empty list if
-#everything is OK, or an undef if an error happened.
+=head1 PROTECTED METHODS
+
+=head2 _getFailedRAIDSets
+
+ my $failed_rs = $self->_getFailedRAIDSets($adapter);
+
+Get a listref of failed RAIDSets. $failed_rs contains an empty list if
+everything is OK, or an undef if an error happened.
+
+=cut
 sub _getFailedRAIDSets {
 	my ($self, $adapter) = @_;
 
@@ -190,15 +196,6 @@ L<P9::AA::Check>
 =head1 AUTHOR
 
 Uros Golja
-
-=cut
-
-=head2 _getFailedRAIDSets
-
- my $failed_rs = $self->_getFailedRAIDSets($adapter);
-
-Get a listref of failed RAIDSets. $failed_rs contains an empty list if
-everything is OK, or an undef if an error happened.
 
 =cut
 

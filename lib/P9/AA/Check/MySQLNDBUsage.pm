@@ -88,18 +88,15 @@ sub check {
 		}
 
 		# parse section data...
-=pod
-~~~OK~~~
-Sending dump signal with data:
-0x000003e8 Sending dump signal with data:
-0x000003e8 
-ndb_mgm> Node 3: Data usage is 14%(14030 32K pages of total 98304)
-Node 3: Index usage is 1%(4561 8K pages of total 393248)
-Node 4: Data usage is 14%(14023 32K pages of total 98304)
-Node 4: Index usage is 1%(4562 8K pages of total 393248)
-~~~FAILED~~~
-=cut
-
+#~~~OK~~~
+#Sending dump signal with data:
+#0x000003e8 Sending dump signal with data:
+#0x000003e8 
+#ndb_mgm> Node 3: Data usage is 14%(14030 32K pages of total 98304)
+#Node 3: Index usage is 1%(4561 8K pages of total 393248)
+#Node 4: Data usage is 14%(14023 32K pages of total 98304)
+#Node 4: Index usage is 1%(4562 8K pages of total 393248)
+#~~~FAILED~~~
 		
 		# check data usage
 		if ($line =~ m/^Node (\d+): Data usage is (\d+)%\((.*)\)$/) {

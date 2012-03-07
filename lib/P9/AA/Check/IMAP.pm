@@ -354,7 +354,7 @@ sub imapDisconnect {
 	return 1;
 }
 
-=sub head2 imapSockMeta
+=head2 imapSockMeta
 
  my $m = $self->imapSockMeta($sock);
 

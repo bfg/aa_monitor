@@ -385,11 +385,19 @@ header. Currenty only B<(application|text)/(json|xml)> are supported.
 
 =item L<FTP|P9::AA::Check::FTP>
 
+=item L<HAProxy|P9::AA::Check::HAProxy>
+
 =item L<HPRAID|P9::AA::Check::HPRAID>
+
+=item L<HTTPLiveStreaming|P9::AA::Check::HTTPLiveStreaming>
+
+=item L<HTTPSmoothStreaming|P9::AA::Check::HTTPSmoothStreaming>
 
 =item L<IMAP|P9::AA::Check::IMAP>
 
 =item L<IntelSensors|P9::AA::Check::IntelSensors>
+
+=item L<IOIPTV|P9::AA::Check::IOIPTV>
 
 =item L<JSON|P9::AA::Check::JSON>
 
@@ -433,6 +441,8 @@ header. Currenty only B<(application|text)/(json|xml)> are supported.
 
 =item L<ProxyCheck|P9::AA::Check::ProxyCheck>
 
+=item L<RMIRest|P9::AA::Check::RMIRest>
+
 =item L<RTSP|P9::AA::Check::RTSP>
 
 =item L<Rsync|P9::AA::Check::Rsync>
@@ -440,6 +450,8 @@ header. Currenty only B<(application|text)/(json|xml)> are supported.
 =item L<SMART|P9::AA::Check::SMART>
 
 =item L<SMTP|P9::AA::Check::SMTP>
+
+=item L<StackedCheck|P9::AA::Check::StackedCheck>
 
 =item L<TCPSocket|P9::AA::Check::TCPSocket>
 

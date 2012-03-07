@@ -11,7 +11,7 @@ our $VERSION = 0.11;
 
 =head1 NAME
 
-IP IPTV module.
+IO IPTV module.
 
 =cut
 sub clearParams {

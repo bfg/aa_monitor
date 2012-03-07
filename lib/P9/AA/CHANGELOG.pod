@@ -19,6 +19,8 @@ B<require_audio>, B<require_video>.
 L<B<HTTPLiveStreaming>|P9::AA::Check::HTTPLiveStreaming>: added missing host_header, headerHost
 support.
 
+=item * POD documentation fixes in modules and L<B<README_AA>|P9::README_AA>
+
 =back
 
 =head2 1.1.2

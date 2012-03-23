@@ -23,7 +23,7 @@ use P9::AA::Protocol::_HTTPCommon;
 
 use base 'P9::AA::Protocol::_HTTPCommon';
 
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 my $log = P9::AA::Log->new();
 my $cfg = P9::AA::Config->singleton();
 
@@ -57,7 +57,6 @@ sub process {
 		return 0;
 	}
 	$ts = time() unless (defined $ts);
-
 	
 	# create response (bad by default)
 	my $resp = $self->response();
@@ -239,11 +238,25 @@ sub parse {
 			goto outta_parse;
 		}
 		
+		# has client sent Expect request header?
+		if (defined(my $e = $req->header('Expect'))) {
+		  $e = lc($e);
+		  if ($e =~ m/^\s*100-continue/i) {
+		    print $fd "HTTP/1.1 100 Continue\r\n\r\n";
+		  }
+		}
+
 		# try to convert it into int
 		{ no warnings; $cl += 0 }
 
 		# read content body
 		if ($do_read && $cl > 0) {
+		  # too big request body?
+		  if ($cl > 1024 * 1024) {
+		    $self->error("Request entity too big (413).");
+        return undef;
+		  }
+
 			my $buf = '';
 			my $r = read($fd, $buf, $cl);
 			unless (defined $r) {

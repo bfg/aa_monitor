@@ -4,6 +4,26 @@ aa_monitor changelog
 
 =head1 VERSIONS
 
+=head2 1.1.4
+
+=over
+
+=item * protocol L<B<HTTP>|P9::AA::Protocol::HTTP>:
+
+=over
+
+=item * Added support for POST/PUT Expect: 100-continue request header
+
+=item * Added http request body limit (1M)
+
+=back
+
+=item * new module L<B<MultiCheck>|P9::AA::Check::MultiCheck>
+
+=item * module L<B<Time>|P9::AA::Check::Time>: really implemented millisecond threshold precision
+
+=back
+
 =head2 1.1.3
 
 =over

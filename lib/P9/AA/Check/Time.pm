@@ -10,7 +10,7 @@ use base 'P9::AA::Check::_Socket';
 
 use constant NTP_ADJ => 2208988800;
 
-our $VERSION = 0.24;
+our $VERSION = 0.25;
 
 sub clearParams {
 	my ($self) = @_;
@@ -22,7 +22,7 @@ sub clearParams {
 	
 	$self->cfgParamAdd(
 		'time_diff_threshold',
-		60,
+		1000,
 		'Maximum allowed time difference between local clock and NTP server\'s clock in milliseconds.',
 		$self->validate_int(0, 30000),
 	);
@@ -93,7 +93,6 @@ sub _checkNTPServer {
 	my $result = 1;
 
 	$self->bufApp("### Checking NTP server '$host:$port'.");
-	my $t = Time::HiRes::time();
 	my $data = undef;
 	eval {
 		$data = $self->_getNTPData($host, $port);
@@ -103,6 +102,7 @@ sub _checkNTPServer {
 		$self->{error} = "Error retrieving time data: " . $@;
 		return 0;
 	}
+	my $t = Time::HiRes::time();
 
 	unless (defined $data) {
 		$self->{error} = "Error checking NTP server: " . $self->{error};
@@ -119,7 +119,7 @@ sub _checkNTPServer {
 			next;
 		}
 		my $val = $data->{$key};
-		my $diff = ($val - $t);
+		my $diff = ($val - $t) * 1000;
 		my $str = "";
 
 		if (abs($diff) > $self->{time_diff_threshold}) {

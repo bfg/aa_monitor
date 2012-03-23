@@ -6,7 +6,7 @@ use warnings;
 use P9::AA::Constants;
 use base 'P9::AA::Check::JSON';
 
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 
 =head1 NAME
 
@@ -47,7 +47,7 @@ sub clearParams {
 	$self->cfgParamRemove('strict');
 	$self->cfgParamRemove('url');
 	$self->cfgParamRemove('user_agent');
-	$self->cfgParamRemove('ipv6');
+	# $self->cfgParamRemove('ipv6');
 	$self->cfgParamRemove('debug_response');
 	$self->cfgParamRemove('ignore_http_status');
 	$self->cfgParamRemove('timeout');	

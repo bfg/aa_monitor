@@ -41,80 +41,80 @@ See L<P9::Check::AA::StackedCheck/SYNOPSIS>
 
 =cut
 sub clearParams {
-	my ($self) = @_;
-	
-	# run parent's clearParams
-	return 0 unless ($self->SUPER::clearParams());
+  my ($self) = @_;
+  
+  # run parent's clearParams
+  return 0 unless ($self->SUPER::clearParams());
 
-	# set module description
-	$self->setDescription(
-		"Performs multiple checks and evaluates results."
-	);
+  # set module description
+  $self->setDescription(
+    "Performs multiple checks and evaluates results."
+  );
 
-	# define additional configuration variables...
-	$self->cfgParamAdd(
+  # define additional configuration variables...
+  $self->cfgParamAdd(
     'warning_threshold',
     75,
     'Total check score warning threshold in percents.',
     $self->validate_int(0,100),
-	);
-	$self->cfgParamAdd(
+  );
+  $self->cfgParamAdd(
     'error_threshold',
     50,
     'Total check score error threshold in percents.',
     $self->validate_int(0,100),
-	);
-	$self->cfgParamRemove('expression');
-	$self->cfgParamRemove('use_cache');
+  );
+  $self->cfgParamRemove('expression');
+  $self->cfgParamRemove('use_cache');
 
-	# this method MUST return 1!
-	return 1;
+  # this method MUST return 1!
+  return 1;
 }
 
 # actually performs ping
 sub check {
-	my ($self) = @_;
-	return CHECK_ERR unless ($self->_checkParams());
-	
-	# score sum
-	my $sum = 0;
+  my ($self) = @_;
+  return CHECK_ERR unless ($self->_checkParams());
+  
+  # score sum
+  my $sum = 0;
 
-	# time to run some checks, bitchez...
-	foreach my $name (keys %{$self->{check_definitions}}) {	  
-	  my $r = $self->_performSubCheck($name);
-	  unless (defined $r) {
-	    return $self->error("Error running check $name: " . $self->error());
-	  }
-	  
-	  # add scores to sum
-	  $sum += $self->_r2score($name, $r);
-	}
-	
+  # time to run some checks, bitchez...
+  foreach my $name (keys %{$self->{check_definitions}}) {    
+    my $r = $self->_performSubCheck($name);
+    unless (defined $r) {
+      return $self->error("Error running check $name: " . $self->error());
+    }
+    
+    # add scores to sum
+    $sum += $self->_r2score($name, $r);
+  }
+  
   # check results...
-	my $max_sum = 3;
-	my $sum_percent = sprintf("%-.2f", ($sum / $max_sum) * 100);
-	
-	$self->bufApp();
-	$self->bufApp("Check result score: $sum_percent%");
+  my $max_sum = 3;
+  my $sum_percent = sprintf("%-.2f", ($sum / $max_sum) * 100);
+  
+  $self->bufApp();
+  $self->bufApp("Check result score: $sum_percent%");
 
-	# final result
-	my $fr = CHECK_OK;	
-	if ($sum_percent < $self->{error_threshold}) {
-	  $self->error("Check score $sum_percent% is lower than error threshold $self->{error_threshold}%.");
-	  $fr = CHECK_ERR;
-	}
-	elsif ($sum_percent < $self->{warning_threshold}) {
-	  $self->warning("Check score $sum_percent% is lower than warning threshold $self->{warning_threshold}%.");
-	  $fr = CHECK_WARN;
-	}
+  # final result
+  my $fr = CHECK_OK;  
+  if ($sum_percent < $self->{error_threshold}) {
+    $self->error("Check score $sum_percent% is lower than error threshold $self->{error_threshold}%.");
+    $fr = CHECK_ERR;
+  }
+  elsif ($sum_percent < $self->{warning_threshold}) {
+    $self->warning("Check score $sum_percent% is lower than warning threshold $self->{warning_threshold}%.");
+    $fr = CHECK_WARN;
+  }
 
-	return $fr;
+  return $fr;
 }
 
 sub toString {
-	my ($self) = @_;
-	no warnings;
-	return join(', ', sort(keys %{$self->{check_definitions}}));
+  my ($self) = @_;
+  no warnings;
+  return join(', ', sort(keys %{$self->{check_definitions}}));
 }
 
 sub _r2score {
@@ -166,54 +166,54 @@ sub _getWeightScore {
 }
 
 sub _checkParams {
-	my ($self) = @_;
-	
-	unless (%{$self->{check_definitions}}) {
-		$self->error("No check definitions were specified.");
-		return 0;
-	}
-	my $err = "Invalid parameter check_definitions: ";
-	foreach my $e (keys %{$self->{check_definitions}}) {
-		unless (defined $e && length($e) > 0) {
-			$self->error($err . "zero-length definition key name.");
-			return 0;
-		}
-		my $def = $self->{check_definitions}->{$e};
-		
-		# get module and params...
-		my $module = $def->{module};
-		my $params = $def->{params};
-		unless (defined $module && length $module > 0) {
-			$self->error($err . "Check definition $e: No check module name.");
-			return 0;
-		}
-		# params?
-		$params = {} unless (defined $params && ref($params) eq 'HASH');
-		$def->{params} = $params;
- 	}
- 	
- 	return 1;
+  my ($self) = @_;
+  
+  unless (%{$self->{check_definitions}}) {
+    $self->error("No check definitions were specified.");
+    return 0;
+  }
+  my $err = "Invalid parameter check_definitions: ";
+  foreach my $e (keys %{$self->{check_definitions}}) {
+    unless (defined $e && length($e) > 0) {
+      $self->error($err . "zero-length definition key name.");
+      return 0;
+    }
+    my $def = $self->{check_definitions}->{$e};
+    
+    # get module and params...
+    my $module = $def->{module};
+    my $params = $def->{params};
+    unless (defined $module && length $module > 0) {
+      $self->error($err . "Check definition $e: No check module name.");
+      return 0;
+    }
+    # params?
+    $params = {} unless (defined $params && ref($params) eq 'HASH');
+    $def->{params} = $params;
+   }
+   
+   return 1;
 }
 
 sub _validateSubCheckResult {
-	my ($self, $name, $result) = @_;
-	unless (defined $result && ref($result) eq 'HASH') {
-		die "Check $name returned invalid result structure.\n";
-	}
-	
-	my $c = $result->{data}->{check};
-	my $res = $c->{result_code};
-	unless (defined $res) {
-		die "Check $name returned invalid result code.\n";
-	}
-	
-	# build buffer message
-	my $buf = sprintf("CHECK %-30s: %-7s", $name, result2str($res));
+  my ($self, $name, $result) = @_;
+  unless (defined $result && ref($result) eq 'HASH') {
+    die "Check $name returned invalid result structure.\n";
+  }
+  
+  my $c = $result->{data}->{check};
+  my $res = $c->{result_code};
+  unless (defined $res) {
+    die "Check $name returned invalid result code.\n";
+  }
+  
+  # build buffer message
+  my $buf = sprintf("CHECK %-30s: %-7s", $name, result2str($res));
 
-	$buf .= " [weight score: " . sprintf("%-3d", $self->_getWeightScore($name));
-	$buf .= " weight: " . sprintf("%-.2f", $self->_getWeight($name));
-	$buf .= " final result: " . sprintf("%-.2f", $self->_r2score($name, $res));
-	$buf .= "]";
+  $buf .= " [weight score: " . sprintf("%-3d", $self->_getWeightScore($name));
+  $buf .= " weight: " . sprintf("%-.2f", $self->_getWeight($name));
+  $buf .= " final result: " . sprintf("%-.2f", $self->_r2score($name, $res));
+  $buf .= "]";
 
   unless ($res == CHECK_OK) {
     $buf .= " [";
@@ -226,17 +226,17 @@ sub _validateSubCheckResult {
     $buf .= "]";
   }
 
-	$self->bufApp($buf);
+  $self->bufApp($buf);
 
-	# should we print message buffer?
-	if ($self->{debug}) {
-		$self->bufApp();
-		$self->bufApp("=== BEGIN CHECK MESSAGES: $name");
-		$self->bufApp($c->{messages});
-		$self->bufApp();		
-	}
-	
-	return $res;
+  # should we print message buffer?
+  if ($self->{debug}) {
+    $self->bufApp();
+    $self->bufApp("=== BEGIN CHECK MESSAGES: $name");
+    $self->bufApp($c->{messages});
+    $self->bufApp();    
+  }
+  
+  return $res;
 }
 
 =head1 SEE ALSO

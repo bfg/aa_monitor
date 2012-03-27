@@ -237,7 +237,15 @@ sub parse {
 			$req = undef;
 			goto outta_parse;
 		}
-		
+
+		# try to convert it into int
+		{ no warnings; $cl += 0 }
+    # too big request body?
+	  if ($cl > 1024 * 1024) {
+	    $self->error("Request entity too big (413).");
+      return undef;
+	  }
+
 		# has client sent Expect request header?
 		if (defined(my $e = $req->header('Expect'))) {
 		  $e = lc($e);
@@ -246,16 +254,8 @@ sub parse {
 		  }
 		}
 
-		# try to convert it into int
-		{ no warnings; $cl += 0 }
-
 		# read content body
 		if ($do_read && $cl > 0) {
-		  # too big request body?
-		  if ($cl > 1024 * 1024) {
-		    $self->error("Request entity too big (413).");
-        return undef;
-		  }
 
 			my $buf = '';
 			my $r = read($fd, $buf, $cl);

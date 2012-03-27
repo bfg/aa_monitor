@@ -91,11 +91,16 @@ sub check {
   }
   
   # check results...
-  my $max_sum = 3;
+  my $max_sum = $self->_maxsum();
   my $sum_percent = sprintf("%-.2f", ($sum / $max_sum) * 100);
   
   $self->bufApp();
-  $self->bufApp("Check result score: $sum_percent%");
+  $self->bufApp(
+    sprintf(
+      "Check result score: %-.2f/%-.2f [%-.2f%%]",
+      $sum, $max_sum, $sum_percent
+    )
+  );
 
   # final result
   my $fr = CHECK_OK;  
@@ -117,6 +122,14 @@ sub toString {
   return join(', ', sort(keys %{$self->{check_definitions}}));
 }
 
+sub _maxsum {
+  my ($self) = @_;
+  my $s = 0;
+  foreach my $name (keys %{$self->{check_definitions}}) {
+    $s += $self->_r2score($name, CHECK_OK)
+  }
+  return $s;
+}
 sub _r2score {
   my ($self, $name, $r) = @_;
   my $res = 0;

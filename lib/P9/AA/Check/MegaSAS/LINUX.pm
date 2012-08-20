@@ -1,4 +1,4 @@
-package P9::AA::Check::Areca::LINUX;
+package P9::AA::Check::MegaSAS::LINUX;
 
 use strict;
 use warnings;
@@ -6,24 +6,24 @@ use warnings;
 use File::Spec;
 use POSIX qw(getcwd);
 
-use base 'P9::AA::Check::Areca::_arecacli';
+use base 'P9::AA::Check::MegaSAS::_megacli';
 
 =head1 NAME
 
-Linux implementation of L<P9::AA::Check::Areca::_arecacli> module.
+Linux implementation of L<P9::AA::Check::MegaSAS::_megacli> module.
 
 =head1 DESCRIPTION
 
-NOTE: This module requires areca-cli command line utility.
+NOTE: This module requires MegaCli command line utility.
 
 =head1 SEE ALSO
 
-L<P9::AA::Check::Areca::_arecacli>, 
-L<P9::AA::Check::Areca>
+L<P9::AA::Check::MegaSAS::_megacli>, 
+L<P9::AA::Check::MegaSAS>
 
 =head1 AUTHOR
 
-Uros Golja
+Brane F. Gracnar
 
 =cut
 

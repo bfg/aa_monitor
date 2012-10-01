@@ -65,7 +65,7 @@ sub clearParams {
 	$self->cfgParamAdd(
 		'strict',
 		0,
-		'Strict XML validation; Requires xmllint(1) from libxml2 package.',
+		'Strict XML validation; Requires xmllint(1) from libxml2-utils package.',
 		$self->validate_str()
 	);
 	$self->cfgParamAdd(

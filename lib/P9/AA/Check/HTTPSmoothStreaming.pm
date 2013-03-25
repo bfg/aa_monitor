@@ -339,8 +339,15 @@ sub _getStartTime {
     return -1;
   }
   
-  my $v = (exists $data->{c}->[$chunk_num]->{d}) ?
-    $data->{c}->[$chunk_num]->{d} : -1;
+  print "DEbugic $chunk_num: $data->{c}->[$chunk_num]->{d}\n";
+  $self->bufApp($self->dumpVarCompact($data->{c}));
+  my $v = -1;
+  if (exists $data->{c}->[$chunk_num]->{d}) {
+    $v = $data->{c}->[$chunk_num]->{d};
+  }
+  elsif (exists $data->{c}->[$chunk_num]->{t}) {
+    $v = $data->{c}->[$chunk_num]->{t};
+  }
   
   unless ($v >= 0) {
     $self->error("Unable to find chunk number $chunk_num.");

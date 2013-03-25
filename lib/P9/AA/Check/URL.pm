@@ -298,7 +298,7 @@ sub prepareRequest {
 	if (defined $o->{username} && defined $o->{password}) {
 		$req->header(
 			"Authorization",
-			"Basic " . encode_base64($o->{username} . ":" . $o->{password}),
+			"Basic " . encode_base64($o->{username} . ":" . $o->{password}, ''),
 		);
 	}
 	

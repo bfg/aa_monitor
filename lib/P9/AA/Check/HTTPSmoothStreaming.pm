@@ -339,7 +339,6 @@ sub _getStartTime {
     return -1;
   }
   
-  print "DEbugic $chunk_num: $data->{c}->[$chunk_num]->{d}\n";
   $self->bufApp($self->dumpVarCompact($data->{c}));
   my $v = -1;
   if (exists $data->{c}->[$chunk_num]->{d}) {

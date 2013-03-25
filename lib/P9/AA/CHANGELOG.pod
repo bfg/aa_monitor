@@ -4,6 +4,16 @@ aa_monitor changelog
 
 =head1 VERSIONS
 
+=head2 1.1.5
+
+=over
+
+=item * module L<B<URL>|P9::AA::Check::URL> and all derived modules: fixed really bad bug regarding http basic auth
+
+=item * module L<B<HTTPSmoothStreaming>|P9::AA::Check::HTTPSmoothStreaming>: robustnes fix
+
+=back
+
 =head2 1.1.4
 
 =over

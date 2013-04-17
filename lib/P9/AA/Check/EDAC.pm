@@ -6,6 +6,12 @@ use warnings;
 use P9::AA::Constants;
 use base 'P9::AA::Check';
 
+=head1 NAME
+
+ECC memory test module
+
+=cut
+
 our $VERSION = 0.20;
 
 ##################################################
@@ -101,21 +107,43 @@ sub check {
 	return $result;
 }
 
+=head1 METHODS
+
+This module inherits all methods from L<P9::AA::Check> and implements the following ones:
+
+=head2 edac_data
+
+  my $struct = $chk->edac_data();
+
+Returns edac data hash
+
+=cut
 sub edac_data {
   my $self = shift;
   $self->error("This method is not implemented in class " . ref($self));
   return undef;
 }
 
+=head2 edac_reset
+
+  $chk->edac_reset($memory_controller);
+
+Resets edac counters
+
+=cut
 sub edac_reset {
   my $self = shift;
   $self->error("This method is not implemented in class " . ref($self));
   return undef;  
 }
 
-##################################################
-#              PRIVATE METHODS                   #
-##################################################
+=head1 SEE ALSO
+
+=over
+
+=item * L<P9::AA::Check::EDAC::LINUX>
+
+=back
 
 =head1 AUTHOR
 

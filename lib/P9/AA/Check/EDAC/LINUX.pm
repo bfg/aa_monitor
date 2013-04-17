@@ -18,6 +18,12 @@ use constant EDAC_PROCFS_ROOT => '/proc/mc';
 
 our $VERSION = 0.20;
 
+=head1 NAME
+
+Linux implementation of EDAC module.
+
+=cut
+
 ##################################################
 #              PUBLIC  METHODS                   #
 ##################################################
@@ -283,6 +289,16 @@ sub _edac_last_reset {
   no warnings;
   return (time() - int($str));
 }
+
+=head1 SEE ALSO
+
+=over
+
+=item * L<P9::AA::Check::EDAC>
+
+=item * L<https://www.kernel.org/doc/Documentation/edac.txt>
+
+=back
 
 =head1 AUTHOR
 

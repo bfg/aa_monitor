@@ -4,6 +4,14 @@ aa_monitor changelog
 
 =head1 VERSIONS
 
+=head2 1.1.6
+
+=over
+
+=item * module L<B<EDAC>|P9::AA::Check::EDAC>: OS implementation split, Linux implementation now works with latest kernels.
+
+=back
+
 =head2 1.1.5
 
 =over

@@ -8,7 +8,7 @@ use POSIX qw(getcwd);
 
 use base 'P9::AA::Check::MegaSAS';
 
-use constant RAID_CMD => 'MegaCli';
+use constant RAID_CMD => 'megacli';
 
 our $VERSION = 0.11;
 
@@ -65,7 +65,7 @@ sub parseAdapterData {
 			$disk_num = undef;
 			$disk_state = undef;			
 		}
-		elsif ($line =~ m/^DISK GROUPS:\s+(\d+)$/i) {
+		elsif ($line =~ m/^DISK GROUPS?:\s+(\d+)$/i) {
 			$volume = int($1);
 			$volume_state = undef;
 			$disk_num = undef;

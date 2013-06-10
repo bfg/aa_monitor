@@ -278,7 +278,7 @@ sub _file_read {
     push(@res, $l) if (length($l));
   }
 
-  return @res;
+  return wantarray ? @res : join('\n', @res);
 }
 
 sub _edac_last_reset {

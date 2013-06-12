@@ -401,7 +401,7 @@ sub _parse_openssl_x509 {
     elsif ($l =~ m/\s+Subject:\s*(.+)/) {
       $r->{subject} = $1;
     }
-    elsif ($l =~ m/\s+Public-Key\s*:\s+\((\d+)\s+bit\)/) {
+    elsif ($l =~ m/\s+Public.*Key\s*:\s+\((\d+)\s+bit\)/) {
       $r->{key_length} = $1;
     }
   }

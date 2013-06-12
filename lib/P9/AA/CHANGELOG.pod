@@ -8,7 +8,7 @@ aa_monitor changelog
 
 =over
 
-=item * module L<B<EDAC>|P9::AA::Check::EDAC>: fixed critical fix (module now actually works correctly)
+=item * module L<B<EDAC>|P9::AA::Check::EDAC>: fixed critical fuckup (module now actually works correctly)
 
 =item * module L<B<CertificateDB>|P9::AA::Check::CertificateDB>: Added PKCS7/12, DER format support, almost complete rewrite
 

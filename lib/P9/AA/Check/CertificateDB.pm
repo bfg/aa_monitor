@@ -303,6 +303,7 @@ sub _pkcs2pem {
   my $pk_type = ($file =~ m/\.(?:pkcs7|pk7)$/i) ? 'pkcs7' : 'pkcs12';
   my @cmd = ($pk_type, '-in', $file, '-chain', '-nodes', '-passin', 'stdin');
   my ($pid, $in, $o, $e) = $self->_openssl(@cmd);
+  no warnings;
   print $in "$self->{pkcsPassword}\n";
   close($in);
   my $buf = '';

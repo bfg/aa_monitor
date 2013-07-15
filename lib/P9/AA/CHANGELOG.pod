@@ -4,6 +4,16 @@ aa_monitor changelog
 
 =head1 VERSIONS
 
+=head2 1.1.8
+
+=over
+
+=item * module L<B<CertificateDB>|P9::AA::Check::CertificateDB>: Better openssl(1) output parsing
+
+=item * new module L<B<FileCheck>|P9::AA::Check::FileCheck>
+
+=back
+
 =head2 1.1.7
 
 =over

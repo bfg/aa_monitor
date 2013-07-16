@@ -93,7 +93,13 @@ Returns 1 if SSL support modules are available.
 sub hasSSL {
 	my ($self) = @_;
 	unless (defined $_has_ssl) {
-		$_has_ssl = eval 'use ' . CLASS_SSL . '; 1';
+		# check if it's already loaded...
+		$_has_ssl = (exists $INC{'IO/Socket/SSL.pm'}) ? $INC{'IO/Socket/SSL.pm'} : undef;
+
+		# possibly completely disable ipv6
+		$self->v6Sock($self->{ipv6}) unless (defined $_has_ssl);
+
+		$_has_ssl = eval 'use ' . CLASS_SSL . '; 1' unless (defined $_has_ssl);
 	}
 	
 	if (! $_has_ssl) {
@@ -443,9 +449,13 @@ L<IO::Socket::INET> use only (and really ONLY) IPv6.
 Returns 1 on success, otherwise 0.
 
 =cut
+my $_forced_ipv6 = undef;
 sub setForcedIPv6 {
 	my ($self) = @_;
-	return 0 unless ($self->patchSocketImpl());
+	return $_forced_ipv6 if (defined $_forced_ipv6);
+
+	$_forced_ipv6 = $self->patchSocketImpl();
+	return 0 unless ($_forced_ipv6);
 	
 	# we're going to defefine some subs now,
 	# disable warning reporting.
@@ -490,6 +500,10 @@ sub v6Sock {
 		
 		# try to patch socket implementation (ignore result)
 		return $self->patchSocketImpl();
+	} else {
+		# load IO::Socket::SSL with disabled ipv6 support
+		local $@;
+		eval 'use IO::Socket::SSL qw(inet4);'
 	}
 
 	return 1;

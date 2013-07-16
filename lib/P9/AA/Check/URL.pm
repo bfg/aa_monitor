@@ -13,7 +13,7 @@ use Scalar::Util qw(blessed);
 use P9::AA::Constants;
 use base 'P9::AA::Check::_Socket';
 
-our $VERSION = 0.18;
+our $VERSION = 0.19;
 
 =head1 NAME
 
@@ -121,6 +121,16 @@ sub clearParams {
 	$self->cfgParamRemove('timeout_connect');
 	
 	return 1;
+}
+
+sub setParams {
+	my $self = shift;
+	my $r = $self->SUPER::setParams(@_);
+
+	# be strict about ipv6 usage
+	$self->v6Sock($self->{ipv6});
+
+	return $r;
 }
 
 sub toString {

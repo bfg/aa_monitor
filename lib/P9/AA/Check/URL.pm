@@ -115,6 +115,12 @@ sub clearParams {
 		'Display response content.',
 		$self->validate_bool(),
 	);
+	$self->cfgParamAdd(
+		'ssl_verify',
+		0,
+		'Verify peer\'s SSL certificate',
+		$self->validate_bool(),
+	);
 	
 	# remove socket-specific stuff...
 	$self->cfgParamRemove('debug_socket');
@@ -220,6 +226,14 @@ sub getUa {
 	
 	# proxy, anyone?
 	$proxy_url = $self->{proxy_url} unless (defined $proxy_url && length($proxy_url));
+
+	# ssl hostname validation
+	my $ssl_verify = ($self->{ssl_verify}) ? 1 : 0;
+	if ($lwp->can('ssl_opts')) {
+		$lwp->ssl_opts(verify_hostname => $ssl_verify);
+	} else {
+		$ENV{PERL_LWP_SSL_VERIFY_HOSTNAME} = $ssl_verify;
+	}
 
 	if (defined $proxy_url && length($proxy_url) > 0) {
 		$self->bufApp("Using proxy URL: $proxy_url");

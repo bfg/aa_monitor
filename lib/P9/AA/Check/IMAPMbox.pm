@@ -36,9 +36,9 @@ sub clearParams {
   );
   
   $self->cfgParamAdd(
-    'min_age',
+    'max_age',
     3600,
-    'Minumum message age in seconds',
+    'Maximum message age in seconds',
     $self->validate_int(0)
   );
 
@@ -135,16 +135,16 @@ sub _validateMsg {
   return CHECK_OK unless (exists $msg->{time} && $msg->{time});
   
   my $is_read = (exists $msg->{flags} && $msg->{flags} =~ m/Seen/i);
-  my $is_older = ($msg->{time} < ($t - $self->{min_age}));
+  my $is_older = ($msg->{time} < ($t - $self->{max_age}));
 
   if ($self->{must_be_unread}) {
     if ($is_older && ! $is_read) {
-      $self->error("Unread message is older than $self->{min_age} second(s).");
+      $self->error("Unread message is older than $self->{max_age} second(s).");
       return CHECK_ERR;
     }
   } else {
     if ($is_older) {
-      $self->error("Read message is older than $self->{min_age} second(s).");
+      $self->error("Read message is older than $self->{max_age} second(s).");
       return CHECK_ERR;
     }
   }

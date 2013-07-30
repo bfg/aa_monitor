@@ -185,7 +185,7 @@ sub imapConnect {
 		$sock = $self->sslify($sock);
 		unless (defined $sock) {
 			my $err = $self->error;
-			$self->imapQuit($sock);
+			$self->imapDisconnect($sock);
 			$self->error($err);
 			return undef;
 		}
@@ -195,7 +195,7 @@ sub imapConnect {
 	if (defined $user && length $user && defined $pass) {
 		unless ($self->imapCmd($sock, 'LOGIN ' . $user . ' ' . $pass)) {
 			my $err = $self->error;
-			$self->imapQuit($sock);
+			$self->imapDisconnect($sock);
 			$self->error($err);
 			return undef;			
 		}
@@ -345,6 +345,7 @@ sub imapDisconnect {
 
 	# remove socket catalog...
 	my $id = refaddr($sock);
+	return unless (defined $id);
 	delete($self->{_imap}->{$id});
 
 	# close socket

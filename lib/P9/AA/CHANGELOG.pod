@@ -4,6 +4,16 @@ aa_monitor changelog
 
 =head1 VERSIONS
 
+=head2 1.1.9
+
+=over
+
+=item * new module L<B<IMAP>|P9::AA::Check::IMAP>: Robustness fixes
+
+=item * new module L<B<IMAPMbox>|P9::AA::Check::IMAPMbox>: Perform checks against imap mailbox
+
+=back
+
 =head2 1.1.8
 
 =over
